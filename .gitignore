@@ -1,0 +1,16 @@
+node_modules
+dist
+dev-dist
+coverage
+*.local
+.DS_Store
+# Реальные данные пользователя никогда не попадают в репозиторий
+*.sqlite
+*.sqlite3
+*.db
+*.backup
+*.bak
+*.csv
+!docs/examples/*.csv
+/backup*
+/private/
