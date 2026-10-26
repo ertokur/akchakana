@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
-    "icons": "pwa-assets-generator"
+    "icons": "pwa-assets-generator",
+    "check": "npm run build && npm run test && npm run lint"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",
