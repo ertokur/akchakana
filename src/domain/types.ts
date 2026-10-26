@@ -129,6 +129,8 @@ export interface Settings {
   pinHash?: string;
   pinSalt?: string;
   lastExportAt?: Timestamp;
+  /** Напоминание об экспорте отложено до этого момента. */
+  exportSnoozedUntil?: Timestamp;
   onboarded: boolean;
   notificationsEnabled: boolean;
 }
