@@ -4,6 +4,7 @@ import { TransactionsScreen } from '../features/transactions/TransactionsScreen'
 import { TransactionSheet } from '../features/editor/TransactionSheet';
 import { OnboardingScreen } from '../features/onboarding/OnboardingScreen';
 import { Toasts } from '../ui/Toasts';
+import { LockGate } from '../security/LockGate';
 import { BottomNav } from './BottomNav';
 import { useRoute, type Route } from './router';
 import { useTheme } from './useTheme';
@@ -41,7 +42,7 @@ export function App() {
   }
 
   return (
-    <>
+    <LockGate>
       <Suspense
         fallback={
           <div className="flex min-h-dvh items-center justify-center text-muted" role="status">
@@ -54,7 +55,7 @@ export function App() {
       {settings.onboarded && <BottomNav current={route} />}
       <TransactionSheet />
       <Toasts />
-    </>
+    </LockGate>
   );
 }
 
