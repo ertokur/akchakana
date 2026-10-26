@@ -1,1 +1,132 @@
 @import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Цвета задаются CSS-переменными, Tailwind ссылается на них (bg-surface, text-muted и т. д.).
+ * Пары текст/фон подобраны под контраст WCAG AA (≥ 4.5:1 для обычного текста).
+ */
+:root {
+  --app-bg: #f3f5f4;
+  --app-surface: #ffffff;
+  --app-surface-2: #e9eeec;
+  --app-text: #101715;
+  --app-muted: #48534f;
+  --app-border: #d3dbd8;
+  --app-accent: #0b6b62;
+  --app-accent-strong: #08524b;
+  --app-accent-fg: #ffffff;
+  --app-accent-soft: #d6efeb;
+  --app-income: #046c4e;
+  --app-expense: #b3261e;
+  --app-warning: #8a5300;
+  --app-overlay: rgb(10 16 14 / 0.45);
+  color-scheme: light;
+}
+
+.dark {
+  --app-bg: #0c1110;
+  --app-surface: #151c1a;
+  --app-surface-2: #1f2926;
+  --app-text: #e7eeeb;
+  --app-muted: #a2b1ac;
+  --app-border: #2e3a37;
+  --app-accent: #3cc7b5;
+  --app-accent-strong: #6fdccd;
+  --app-accent-fg: #03201c;
+  --app-accent-soft: #123a35;
+  --app-income: #4fd1a1;
+  --app-expense: #ff8a80;
+  --app-warning: #f2b45a;
+  --app-overlay: rgb(0 0 0 / 0.6);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --color-bg: var(--app-bg);
+  --color-surface: var(--app-surface);
+  --color-surface-2: var(--app-surface-2);
+  --color-text: var(--app-text);
+  --color-muted: var(--app-muted);
+  --color-border: var(--app-border);
+  --color-accent: var(--app-accent);
+  --color-accent-strong: var(--app-accent-strong);
+  --color-accent-fg: var(--app-accent-fg);
+  --color-accent-soft: var(--app-accent-soft);
+  --color-income: var(--app-income);
+  --color-expense: var(--app-expense);
+  --color-warning: var(--app-warning);
+  --color-overlay: var(--app-overlay);
+}
+
+@layer base {
+  /* 100% — уважаем системный размер шрифта; все размеры в rem. */
+  html {
+    font-size: 100%;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-bg font-sans text-text antialiased;
+    overscroll-behavior-y: none;
+  }
+  button,
+  [role='button'] {
+    touch-action: manipulation;
+  }
+  :focus-visible {
+    outline: 2px solid var(--app-accent);
+    outline-offset: 2px;
+  }
+  input,
+  select,
+  textarea {
+    font-size: max(1rem, 16px); /* iOS не зумит поле при фокусе */
+  }
+}
+
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@utility pl-safe {
+  padding-left: env(safe-area-inset-left);
+}
+@utility pr-safe {
+  padding-right: env(safe-area-inset-right);
+}
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.animate-sheet-in {
+  animation: sheet-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.animate-fade-in {
+  animation: fade-in 150ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-sheet-in,
+  .animate-fade-in {
+    animation: none;
+  }
+}
