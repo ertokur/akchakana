@@ -5,6 +5,8 @@ import { EmptyState } from '../ui/controls';
 import { AccountsScreen } from '../features/accounts/AccountsScreen';
 import { CategoriesScreen } from '../features/categories/CategoriesScreen';
 import { MoreScreen } from '../features/more/MoreScreen';
+import { BudgetsScreen } from '../features/budgets/BudgetsScreen';
+import { RecurringScreen } from '../features/recurring/RecurringScreen';
 
 // Тяжёлые экраны (Chart.js, sql.js) грузятся отдельными чанками по требованию.
 const StatsScreen = lazy(() =>
@@ -24,10 +26,10 @@ export const SCREENS: Partial<Record<Route, ComponentType>> = {
   accounts: AccountsScreen,
   debts: AccountsScreen,
   stats: StatsScreen,
-  budgets: Placeholder,
+  budgets: BudgetsScreen,
   more: MoreScreen,
   categories: CategoriesScreen,
-  recurring: Placeholder,
+  recurring: RecurringScreen,
   settings: Placeholder,
   import: Placeholder,
   export: Placeholder,

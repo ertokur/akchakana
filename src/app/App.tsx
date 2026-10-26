@@ -8,6 +8,7 @@ import { BottomNav } from './BottomNav';
 import { useRoute, type Route } from './router';
 import { useTheme } from './useTheme';
 import { SCREENS } from './screens';
+import { useScheduler } from '../features/recurring/useScheduler';
 
 export function App() {
   const loaded = useData((s) => s.loaded);
@@ -15,6 +16,7 @@ export function App() {
   const settings = useData((s) => s.settings);
   const route = useRoute();
   useTheme(settings.theme);
+  useScheduler(loaded && settings.onboarded);
 
   useEffect(() => {
     void load();
