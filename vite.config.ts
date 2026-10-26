@@ -6,8 +6,11 @@ import { VitePWA } from 'vite-plugin-pwa';
 import pkg from './package.json' with { type: 'json' };
 
 const THEME_COLOR = '#0b6b62';
+// Путь, по которому опубликовано приложение: '/' локально, '/akchakana/' на GitHub Pages.
+const BASE = process.env.BASE_PATH ?? '/';
 
 export default defineConfig({
+  base: BASE,
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
@@ -23,8 +26,8 @@ export default defineConfig({
         description:
           'Офлайн-учёт доходов, расходов и бюджетов. Данные хранятся только на устройстве.',
         lang: 'ru',
-        start_url: '/',
-        scope: '/',
+        start_url: BASE,
+        scope: BASE,
         display: 'standalone',
         orientation: 'portrait',
         background_color: '#f3f5f4',

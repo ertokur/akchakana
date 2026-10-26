@@ -41,7 +41,13 @@ export function OnboardingScreen() {
   return (
     <div className="px-gutter mx-auto flex min-h-dvh max-w-lg flex-col gap-6 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]">
       <div className="flex flex-col items-center gap-3 pt-6 text-center">
-        <img src="/logo.svg" alt="" width={72} height={72} className="rounded-2xl" />
+        <img
+          src={`${import.meta.env.BASE_URL}logo.svg`}
+          alt=""
+          width={72}
+          height={72}
+          className="rounded-2xl"
+        />
         <h1 className="text-2xl font-bold">Акчакана</h1>
         <p className="max-w-xs text-muted">
           Личный учёт денег. Все данные хранятся только на этом устройстве и работают без интернета.

@@ -18,7 +18,11 @@ export async function showNotification(title: string, body: string, tag?: string
   try {
     const registration = await navigator.serviceWorker?.getRegistration();
     if (registration) {
-      await registration.showNotification(title, { body, tag, icon: '/pwa-192x192.png' });
+      await registration.showNotification(title, {
+        body,
+        tag,
+        icon: `${import.meta.env.BASE_URL}pwa-192x192.png`,
+      });
       return;
     }
     new Notification(title, { body, tag });
