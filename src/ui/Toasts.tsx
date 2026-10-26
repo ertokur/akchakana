@@ -43,7 +43,7 @@ export function Toasts() {
   return (
     <div
       aria-live="polite"
-      className="pointer-events-none fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 mx-auto flex max-w-lg flex-col gap-2 px-4"
+      className="pointer-events-none fixed inset-x-0 bottom-[calc(9.5rem+env(safe-area-inset-bottom))] z-50 mx-auto flex max-w-lg flex-col gap-2 px-4"
     >
       {toasts.map((t) => (
         <ToastItem key={t.id} toast={t} />

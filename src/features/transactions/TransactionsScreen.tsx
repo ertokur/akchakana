@@ -89,21 +89,27 @@ export function TransactionsScreen() {
     >
       <ExportReminder />
       <RecurringDue />
-      <section aria-label="Итоги периода" className="mb-4 grid grid-cols-3 gap-2">
-        <SummaryCell
-          label="Доходы"
-          value={formatMoney(summary.income, filterCurrency)}
-          tone="income"
-        />
-        <SummaryCell
-          label="Расходы"
-          value={formatMoney(summary.expense, filterCurrency)}
-          tone="expense"
-        />
-        <SummaryCell
-          label="Баланс"
-          value={formatMoney(summary.balance, filterCurrency, { sign: true })}
-        />
+      <section aria-label="Итоги периода" className="mb-4 rounded-2xl bg-surface p-3">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="text-sm text-muted">Баланс за период</span>
+          <span
+            className={`tabular text-xl font-bold ${summary.balance < 0 ? 'text-expense' : ''}`}
+          >
+            {formatMoney(summary.balance, filterCurrency, { sign: true })}
+          </span>
+        </div>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <SummaryCell
+            label="Доходы"
+            value={formatMoney(summary.income, filterCurrency)}
+            tone="income"
+          />
+          <SummaryCell
+            label="Расходы"
+            value={formatMoney(summary.expense, filterCurrency)}
+            tone="expense"
+          />
+        </div>
       </section>
       {otherCurrencies.length > 0 && (
         <p className="-mt-2 mb-3 text-sm text-muted">
@@ -180,11 +186,9 @@ function SummaryCell({
   const color =
     tone === 'income' ? 'text-income' : tone === 'expense' ? 'text-expense' : 'text-text';
   return (
-    <div className="min-w-0 rounded-xl bg-surface px-2 py-2 text-center">
+    <div className="min-w-0 rounded-xl bg-surface-2 px-3 py-2">
       <div className="text-xs text-muted">{label}</div>
-      <div className={`tabular truncate text-sm font-semibold sm:text-base ${color}`} title={value}>
-        {value}
-      </div>
+      <div className={`tabular text-base font-semibold break-words ${color}`}>{value}</div>
     </div>
   );
 }

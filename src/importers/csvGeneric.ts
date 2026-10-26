@@ -183,6 +183,27 @@ export function analyzeCsv(
   const missingCategories = new Map<string, { name: string; kind: CategoryKind }>();
   let color = existing.accounts.length + existing.categories.length;
 
+  // Предварительный проход: все незнакомые счета и категории, даже если строка
+  // потом не пройдёт проверку по другой причине (например, её счёт ещё не создан).
+  for (const cells of csv.rows) {
+    const value = (i: number) => (i >= 0 ? (cells[i] ?? '').trim() : '');
+    for (const name of [value(idx.account), value(idx.toAccount)]) {
+      if (name && !accountsByName.has(norm(name)) && !missingAccounts.has(norm(name))) {
+        missingAccounts.set(norm(name), name);
+      }
+    }
+    const categoryName = value(idx.category);
+    const sign = tryParseMinor(value(idx.amount), 4);
+    if (sign === null) continue;
+    const type = value(idx.type) ? parseType(value(idx.type)) : sign < 0 ? 'expense' : 'income';
+    if (categoryName && (type === 'expense' || type === 'income')) {
+      const key = `${type}|${norm(categoryName)}`;
+      if (!categoriesByName.has(key) && !missingCategories.has(key)) {
+        missingCategories.set(key, { name: categoryName, kind: type });
+      }
+    }
+  }
+
   const resolveAccount = (name: string, currency: CurrencyCode): Account | null => {
     const key = norm(name);
     const found = accountsByName.get(key);

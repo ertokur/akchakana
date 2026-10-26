@@ -128,6 +128,32 @@ describe('универсальный CSV', () => {
     expect(missingCategories).toEqual([{ name: 'Кино', kind: 'expense' }]);
   });
 
+  it('в пустом приложении предлагает создать и счета, и категории', () => {
+    const { missingAccounts, missingCategories } = analyzeCsv(parsed, base, {
+      accounts: [],
+      categories: [],
+      transactions: [],
+    });
+    expect(missingAccounts).toEqual(['Наличные', 'Карта']);
+    expect(missingCategories).toEqual([
+      { name: 'Продукты', kind: 'expense' },
+      { name: 'Зарплата', kind: 'income' },
+      { name: 'Кино', kind: 'expense' },
+    ]);
+    const { plan } = analyzeCsv(
+      parsed,
+      {
+        ...base,
+        createAccounts: new Set(missingAccounts),
+        createCategories: new Set(missingCategories.map((c) => `${c.kind}|${c.name}`)),
+      },
+      { accounts: [], categories: [], transactions: [] },
+    );
+    expect(plan.transactions).toHaveLength(3);
+    expect(plan.accounts).toHaveLength(2);
+    expect(plan.categories).toHaveLength(3);
+  });
+
   it('создаёт разрешённые, отчитывается об ошибках по строкам, пропускает дубликаты', () => {
     const { plan } = analyzeCsv(
       parsed,

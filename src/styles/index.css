@@ -103,6 +103,11 @@
 @utility pr-safe {
   padding-right: env(safe-area-inset-right);
 }
+/* Боковые поля не меньше 1rem и не меньше выреза экрана. */
+@utility px-gutter {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
 @utility tabular {
   font-variant-numeric: tabular-nums;
 }

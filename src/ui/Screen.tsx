@@ -32,7 +32,7 @@ export function Screen({
         </div>
         {header && <div className="mx-auto max-w-lg px-4 pb-3">{header}</div>}
       </header>
-      <main className="pl-safe pr-safe mx-auto w-full max-w-lg flex-1 px-4 pt-3 pb-[calc(6rem+env(safe-area-inset-bottom))]">
+      <main className="px-gutter mx-auto w-full max-w-lg flex-1 pt-3 pb-[calc(6rem+env(safe-area-inset-bottom))]">
         {children}
       </main>
     </div>

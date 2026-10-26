@@ -39,7 +39,7 @@ export function OnboardingScreen() {
   };
 
   return (
-    <div className="pt-safe pb-safe pl-safe pr-safe mx-auto flex min-h-dvh max-w-lg flex-col gap-6 px-5 py-8">
+    <div className="px-gutter mx-auto flex min-h-dvh max-w-lg flex-col gap-6 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]">
       <div className="flex flex-col items-center gap-3 pt-6 text-center">
         <img src="/logo.svg" alt="" width={72} height={72} className="rounded-2xl" />
         <h1 className="text-2xl font-bold">Акчакана</h1>

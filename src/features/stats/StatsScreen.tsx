@@ -140,11 +140,15 @@ export function StatsScreen() {
                   const content = (
                     <>
                       <IconBadge name={s.icon} color={s.color} size={32} />
-                      <span className="min-w-0 flex-1 truncate">{s.name}</span>
-                      <span className="tabular text-sm text-muted">
-                        {total ? `${((s.amount / total) * 100).toFixed(1).replace('.', ',')}%` : ''}
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate">{s.name}</span>
+                        <span className="tabular block text-xs text-muted">
+                          {total
+                            ? `${((s.amount / total) * 100).toFixed(1).replace('.', ',')}%`
+                            : ''}
+                        </span>
                       </span>
-                      <span className="tabular w-28 text-right font-medium">
+                      <span className="tabular text-right font-medium whitespace-nowrap">
                         {formatMoney(s.amount, currency)}
                       </span>
                     </>
@@ -219,7 +223,7 @@ function CompareCard({
   return (
     <Card className="p-3">
       <div className="text-sm text-muted">{label}</div>
-      <div className="tabular truncate text-lg font-bold">{formatMoney(value, currency)}</div>
+      <div className="tabular text-base font-bold break-words">{formatMoney(value, currency)}</div>
       <div
         className={`flex items-center gap-1 text-xs ${pct === null || pct === 0 ? 'text-muted' : bad ? 'text-expense' : 'text-income'}`}
       >
@@ -262,6 +266,7 @@ function DonutChart({
       },
       options: {
         maintainAspectRatio: false,
+        locale: 'ru-RU',
         cutout: '68%',
         animation: false,
         plugins: {
@@ -338,6 +343,7 @@ function BarsChart({
       },
       options: {
         maintainAspectRatio: false,
+        locale: 'ru-RU',
         animation: false,
         interaction: { mode: 'index', intersect: false },
         scales: {
