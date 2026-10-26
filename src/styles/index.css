@@ -21,6 +21,9 @@
   --app-expense: #b3261e;
   --app-warning: #8a5300;
   --app-overlay: rgb(10 16 14 / 0.45);
+  /* Пара цветов графиков проверена на различимость при дальтонизме (синий/оранжевый). */
+  --chart-income: #1f6fd1;
+  --chart-expense: #c2410c;
   color-scheme: light;
 }
 
@@ -39,6 +42,8 @@
   --app-expense: #ff8a80;
   --app-warning: #f2b45a;
   --app-overlay: rgb(0 0 0 / 0.6);
+  --chart-income: #4a8ede;
+  --chart-expense: #d0692c;
   color-scheme: dark;
 }
 

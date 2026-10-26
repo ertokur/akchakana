@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import { Suspense, useEffect, type ReactNode } from 'react';
 import { useData } from '../stores/dataStore';
 import { TransactionsScreen } from '../features/transactions/TransactionsScreen';
 import { TransactionSheet } from '../features/editor/TransactionSheet';
@@ -40,7 +40,15 @@ export function App() {
 
   return (
     <>
-      {renderRoute(route)}
+      <Suspense
+        fallback={
+          <div className="flex min-h-dvh items-center justify-center text-muted" role="status">
+            Загрузка…
+          </div>
+        }
+      >
+        {renderRoute(route)}
+      </Suspense>
       {settings.onboarded && <BottomNav current={route} />}
       <TransactionSheet />
       <Toasts />

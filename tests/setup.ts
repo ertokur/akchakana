@@ -21,3 +21,9 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
       dispatchEvent: () => false,
     }) as MediaQueryList;
 }
+
+// jsdom не рисует canvas: графики в тестах не создаются, но разметка проверяется.
+if (typeof HTMLCanvasElement !== 'undefined') {
+  HTMLCanvasElement.prototype.getContext = (() =>
+    null) as typeof HTMLCanvasElement.prototype.getContext;
+}
