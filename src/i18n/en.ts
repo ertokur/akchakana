@@ -123,7 +123,7 @@ export const en: Dict = {
   'more.debts': 'Debts',
   'more.debtsHint': 'Owed to me and I owe',
   'more.import': 'Import',
-  'more.importHint': '1Money backup or CSV',
+  'more.importHint': 'Backup from another app or CSV',
   'more.export': 'Export',
   'more.exportHint': 'Save all data to CSV',
   'more.settings': 'Settings',
@@ -369,21 +369,6 @@ export const en: Dict = {
   'recurring.deleteConfirm': 'Delete rule?',
   'recurring.deleteHint': 'Transactions already created will remain.',
 
-  // Onboarding
-  'onboarding.defaultAccountName': 'Cash',
-  'onboarding.enterAccountName': 'Enter an account name',
-  'onboarding.tagline':
-    'Personal money tracking. All data stays on this device only and works offline.',
-  'onboarding.firstAccount': 'First account',
-  'onboarding.mainCurrency': 'Main currency',
-  'onboarding.accountName': 'Account name',
-  'onboarding.currentBalance': 'Current balance',
-  'onboarding.start': 'Get started',
-  'onboarding.from1Money': 'Already used 1Money?',
-  'onboarding.from1MoneyText':
-    'Import a backup: accounts, categories and transactions will be carried over. The file is only read and never sent anywhere.',
-  'onboarding.importBackup': 'Import a backup',
-
   // Overview
   'stats.chartKind': 'Transaction type on the chart',
   'stats.allCategories': 'All categories',
@@ -458,18 +443,18 @@ export const en: Dict = {
   'exportReminder.snooze': 'In a week',
 
   // Import
-  'import.pickTitle': '1Money backup or CSV',
+  'import.pickTitle': 'Backup from another budgeting app or CSV',
   'import.pickText':
-    'The format is detected from the file contents: a 1Money backup (an SQLite database, usually without an extension), a CSV exported from this app, or a CSV from another source. The file is only read and never leaves the device.',
+    'The format is detected from the file contents: a backup from another budgeting app (an SQLite file, usually without an extension), a CSV exported from this app, or a CSV from another source. The file is only read and never leaves the device.',
   'import.reading': 'Reading the file…',
   'import.chooseFile': 'Choose file',
-  'import.howTo1Money':
-    'Where to get a 1Money backup: in 1Money open settings → “Backup”, save the backup file to your phone, then choose it here.',
+  'import.howToBackup':
+    'Where to get a backup: in your other budgeting app open settings → “Backup”, save the backup file (SQLite) to your phone, then choose it here.',
   'import.ownFile': 'File from this app',
-  'import.oneMoneyBackup': '1Money backup',
+  'import.otherAppBackup': 'Backup from another budgeting app (SQLite file)',
   'import.backupCurrency': 'Backup currency',
   'import.backupCurrencyHint':
-    'A 1Money file doesn’t store the currency. All accounts and transactions will get the selected one.',
+    'The backup doesn’t store the currency. All accounts and transactions will get the selected one.',
   'import.done': {
     one: 'Imported {count} transaction',
     other: 'Imported {count} transactions',
@@ -512,7 +497,8 @@ export const en: Dict = {
   'import.placeholderAccount': 'Account {id}',
   'import.placeholderCategory': 'Category {id}',
   'import.err.emptyFile': 'The file is empty',
-  'import.err.unknownFormat': 'The file looks like neither a 1Money backup nor a CSV',
+  'import.err.unknownFormat':
+    'The file looks like neither a backup from another budgeting app (SQLite) nor a CSV',
   'import.err.noTable2': 'Couldn’t read the table: a header and at least one row are required',
   'import.err.readFailed': 'Couldn’t read the file: {message}',
   'import.err.needDateAmount': 'Map at least the “{date}” and “{amount}” columns',
@@ -529,7 +515,8 @@ export const en: Dict = {
   'import.err.sameAccount': 'transfer to the same account',
   'import.err.categoryNotFound': 'category “{name}” not found',
   'import.err.readOnly': 'Only read queries are allowed',
-  'import.err.noTable': 'The file has no “{table}” table — this is not a 1Money backup',
+  'import.err.noTable':
+    'The file has no “{table}” table — this is not a backup from a supported budgeting app',
   'import.err.txUnknownType': 'Transaction #{id}: unknown type {type}',
   'import.err.txBadAmount': 'Transaction #{id}: couldn’t read the amount “{value}”',
   'import.err.txBadDate': 'Transaction #{id}: invalid date “{value}”',
@@ -569,7 +556,7 @@ export const en: Dict = {
   'summary.duplicates': 'Duplicates (will be skipped)',
   'summary.balancesAfter': 'Account balances after import',
   'summary.balances': 'Account balances',
-  'summary.checkBalances': 'Compare them with the balances in 1Money.',
+  'summary.checkBalances': 'Compare them with the balances in your previous app.',
   'summary.willImport': 'Will be imported',
   'summary.errors': 'Errors ({count}) — these rows will not be imported',
   'summary.row': 'Row {row}:',

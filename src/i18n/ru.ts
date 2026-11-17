@@ -137,7 +137,7 @@ export const ru = {
   'more.debts': 'Долги',
   'more.debtsHint': 'Мне должны и я должен',
   'more.import': 'Импорт',
-  'more.importHint': 'Резервная копия 1Money или CSV',
+  'more.importHint': 'Резервная копия другого приложения или CSV',
   'more.export': 'Экспорт',
   'more.exportHint': 'Сохранить все данные в CSV',
   'more.settings': 'Настройки',
@@ -366,21 +366,6 @@ export const ru = {
   'recurring.deleteConfirm': 'Удалить правило?',
   'recurring.deleteHint': 'Уже созданные операции останутся.',
 
-  // Первый запуск
-  'onboarding.defaultAccountName': 'Наличные',
-  'onboarding.enterAccountName': 'Введите название счёта',
-  'onboarding.tagline':
-    'Личный учёт денег. Все данные хранятся только на этом устройстве и работают без интернета.',
-  'onboarding.firstAccount': 'Первый счёт',
-  'onboarding.mainCurrency': 'Основная валюта',
-  'onboarding.accountName': 'Название счёта',
-  'onboarding.currentBalance': 'Текущий баланс',
-  'onboarding.start': 'Начать',
-  'onboarding.from1Money': 'Уже вели учёт в 1Money?',
-  'onboarding.from1MoneyText':
-    'Импортируйте резервную копию: счета, категории и операции перенесутся. Файл только читается и никуда не отправляется.',
-  'onboarding.importBackup': 'Импортировать резервную копию',
-
   // Обзор
   'stats.chartKind': 'Тип операций на диаграмме',
   'stats.allCategories': 'Все категории',
@@ -455,18 +440,18 @@ export const ru = {
   'exportReminder.snooze': 'Через неделю',
 
   // Импорт
-  'import.pickTitle': 'Резервная копия 1Money или CSV',
+  'import.pickTitle': 'Резервная копия другого приложения учёта или CSV',
   'import.pickText':
-    'Формат определяется по содержимому файла: резервная копия 1Money (база SQLite, обычно без расширения), CSV, экспортированный из этого приложения, или CSV из другого источника. Файл только читается и не покидает устройство.',
+    'Формат определяется по содержимому файла: резервная копия другого приложения учёта (файл SQLite, обычно без расширения), CSV, экспортированный из этого приложения, или CSV из другого источника. Файл только читается и не покидает устройство.',
   'import.reading': 'Читаю файл…',
   'import.chooseFile': 'Выбрать файл',
-  'import.howTo1Money':
-    'Где взять копию 1Money: в приложении 1Money откройте настройки → «Резервное копирование» и сохраните файл копии на телефон, затем выберите его здесь.',
+  'import.howToBackup':
+    'Где взять копию: в другом приложении учёта откройте настройки → «Резервное копирование», сохраните файл копии (SQLite) на телефон и выберите его здесь.',
   'import.ownFile': 'Файл этого приложения',
-  'import.oneMoneyBackup': 'Резервная копия 1Money',
+  'import.otherAppBackup': 'Резервная копия другого приложения учёта (файл SQLite)',
   'import.backupCurrency': 'Валюта копии',
   'import.backupCurrencyHint':
-    'В файле 1Money валюта не указана. Все счета и операции получат выбранную валюту.',
+    'В резервной копии валюта не указана. Все счета и операции получат выбранную валюту.',
   'import.done': 'Импортировано операций: {count}',
   'import.failed': 'Импорт не выполнен: {message}',
   'import.updateHint':
@@ -507,7 +492,8 @@ export const ru = {
   'import.placeholderAccount': 'Счёт {id}',
   'import.placeholderCategory': 'Категория {id}',
   'import.err.emptyFile': 'Файл пустой',
-  'import.err.unknownFormat': 'Файл не похож ни на резервную копию 1Money, ни на CSV',
+  'import.err.unknownFormat':
+    'Файл не похож ни на резервную копию другого приложения учёта (SQLite), ни на CSV',
   'import.err.noTable2': 'Не удалось прочитать таблицу: нужен заголовок и хотя бы одна строка',
   'import.err.readFailed': 'Не удалось прочитать файл: {message}',
   'import.err.needDateAmount': 'Нужно сопоставить хотя бы колонки «{date}» и «{amount}»',
@@ -524,7 +510,8 @@ export const ru = {
   'import.err.sameAccount': 'перевод на тот же счёт',
   'import.err.categoryNotFound': 'категория «{name}» не найдена',
   'import.err.readOnly': 'Разрешены только запросы на чтение',
-  'import.err.noTable': 'В файле нет таблицы «{table}» — это не резервная копия 1Money',
+  'import.err.noTable':
+    'В файле нет таблицы «{table}» — это не резервная копия поддерживаемого приложения учёта',
   'import.err.txUnknownType': 'Операция #{id}: неизвестный тип {type}',
   'import.err.txBadAmount': 'Операция #{id}: не удалось прочитать сумму «{value}»',
   'import.err.txBadDate': 'Операция #{id}: неверная дата «{value}»',
@@ -564,7 +551,7 @@ export const ru = {
   'summary.duplicates': 'Дубликатов (будут пропущены)',
   'summary.balancesAfter': 'Балансы счетов после импорта',
   'summary.balances': 'Балансы счетов',
-  'summary.checkBalances': 'Сверьте с балансами в 1Money.',
+  'summary.checkBalances': 'Сверьте с балансами в прежнем приложении.',
   'summary.willImport': 'Будет импортировано',
   'summary.errors': 'Ошибки ({count}) — эти строки не будут импортированы',
   'summary.row': 'Строка {row}:',

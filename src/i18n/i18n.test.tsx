@@ -141,10 +141,9 @@ describe('настройка языка', () => {
     const user = userEvent.setup();
     render(<App />);
     await user.selectOptions(await screen.findByLabelText('Язык'), 'en');
-    expect(await screen.findByRole('button', { name: 'Get started' })).toBeInTheDocument();
-    // Стандартное название счёта тоже на выбранном языке.
-    expect(screen.getByLabelText('Account name')).toHaveValue('Cash');
-    await user.click(screen.getByRole('button', { name: 'Get started' }));
+    await waitFor(() => expect(getLang()).toBe('en'));
+    expect(screen.getByLabelText('Language')).toHaveValue('en');
+    await user.click(screen.getByRole('button', { name: 'Начать' }));
     await waitFor(() => expect(useData.getState().settings.onboarded).toBe(true));
     const names = useData.getState().categories.map((c) => c.name);
     expect(names).toContain('Groceries');

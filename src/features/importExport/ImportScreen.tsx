@@ -114,7 +114,7 @@ export function ImportScreen() {
               </p>
             )}
           </Card>
-          <Card className="text-sm text-muted">{t('import.howTo1Money')}</Card>
+          <Card className="text-sm text-muted">{t('import.howToBackup')}</Card>
         </div>
       )}
       {step.kind === 'onemoney' && <OneMoneyStep step={step} onChange={setStep} onCancel={reset} />}
@@ -146,7 +146,7 @@ function OneMoneyStep({
   return (
     <Confirm
       plan={plan}
-      title={t('import.oneMoneyBackup')}
+      title={t('import.otherAppBackup')}
       onCancel={onCancel}
       before={
         <Card className="flex flex-col gap-2">
