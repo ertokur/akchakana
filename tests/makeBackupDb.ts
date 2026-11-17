@@ -1,7 +1,7 @@
 import type { SqlJsStatic } from 'sql.js';
 
 /**
- * Маленькая синтетическая база в формате резервной копии 1Money (структура таблиц как в
+ * Маленькая синтетическая база в формате поддерживаемой резервной копии SQLite (структура таблиц как в
  * настоящей копии). Все данные выдуманы; реальная копия в тесты и репозиторий не попадает.
  *
  * Снимки (_b_i): 1 — старая установка с английскими категориями и удалённым счётом,
@@ -12,7 +12,7 @@ export const D = (iso: string) => Date.parse(iso);
 /** Цвет в формате Android: знаковое 32-битное ARGB. */
 const argb = (hex: string) => 0xff000000 | parseInt(hex.slice(1), 16) | 0;
 
-export function makeOneMoneyDb(SQL: SqlJsStatic, opts: { withBu?: boolean } = {}): Uint8Array {
+export function makeBackupDb(SQL: SqlJsStatic, opts: { withBu?: boolean } = {}): Uint8Array {
   const withBu = opts.withBu ?? true;
   const db = new SQL.Database();
   db.run(`

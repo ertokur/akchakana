@@ -4,7 +4,7 @@ import { byOrder } from '../../stores/dataStore';
 import { IconBadge } from '../../ui/Icon';
 
 /**
- * Сетка категорий верхнего уровня, как в 1Money. Подкатегории выбираются уже в шторке
+ * Сетка категорий верхнего уровня. Подкатегории выбираются уже в шторке
  * операции строкой значков (`SubcategoryBubbles`).
  */
 export function CategoryGrid({

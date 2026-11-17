@@ -2,11 +2,11 @@ import type { SqlJsStatic } from 'sql.js';
 import { computeBalances } from '../domain/balances';
 import { dayKey } from '../domain/dates';
 import { isSqlite, detectFile } from './detect';
-import { argbToHex, oneMoneyIds, parseOneMoneyBackup } from './oneMoneyBackup';
+import { argbToHex, backupIds, parseSqliteBackup } from './sqliteBackup';
 import { summarizePlan, type ImportPlan } from './types';
 import { applyImportPlan } from './apply';
 import { loadSqlJsForTests } from '../../tests/sqljs';
-import { makeOneMoneyDb } from '../../tests/makeOneMoneyDb';
+import { makeBackupDb } from '../../tests/makeBackupDb';
 import { setupTestRepos } from '../../tests/helpers';
 
 const TZ = 'Asia/Bishkek';
@@ -16,12 +16,12 @@ let plan: ImportPlan;
 
 beforeAll(async () => {
   SQL = await loadSqlJsForTests();
-  bytes = makeOneMoneyDb(SQL);
-  plan = parseOneMoneyBackup(SQL, bytes, { currency: 'KGS', now: 1 });
+  bytes = makeBackupDb(SQL);
+  plan = parseSqliteBackup(SQL, bytes, { currency: 'KGS', now: 1 });
 });
 
-const tx = (id: number) => plan.transactions.find((t) => t.id === oneMoneyIds.transaction(id));
-const entity = (id: number) => oneMoneyIds.entity(id);
+const tx = (id: number) => plan.transactions.find((t) => t.id === backupIds.transaction(id));
+const entity = (id: number) => backupIds.entity(id);
 const cat = (id: number) => plan.categories.find((c) => c.id === entity(id));
 const acc = (id: number) => plan.accounts.find((a) => a.id === entity(id));
 const ordered = (kind: 'expense' | 'income', p: ImportPlan = plan, parent?: number) =>
@@ -40,12 +40,12 @@ describe('определение формата', () => {
   });
 });
 
-describe('импорт резервной копии 1Money', () => {
+describe('импорт резервной копии SQLite', () => {
   it('берёт только операции последнего снимка', () => {
     expect(plan.errors).toEqual([]);
     expect(plan.warnings).toEqual([]);
     expect(plan.transactions.map((t) => t.id).sort()).toEqual(
-      [101, 102, 103, 104, 105, 106, 107, 108].map(oneMoneyIds.transaction).sort(),
+      [101, 102, 103, 104, 105, 106, 107, 108].map(backupIds.transaction).sort(),
     );
     expect(tx(100)).toBeUndefined();
   });
@@ -57,7 +57,7 @@ describe('импорт резервной копии 1Money', () => {
     }
   });
 
-  it('счета — строки с начальным балансом, балансы сходятся с 1Money', () => {
+  it('счета — строки с начальным балансом, балансы сходятся с исходным приложением', () => {
     expect(plan.accounts.map((a) => [a.name, a.kind, a.initialBalance])).toEqual([
       ['Карта', 'card', -2875],
       ['Копилка', 'savings', 77900],
@@ -86,7 +86,7 @@ describe('импорт резервной копии 1Money', () => {
     expect(cat(13)?.name).toBe('Транспорт и такси');
   });
 
-  it('цвета берутся из 1Money', () => {
+  it('цвета берутся из копии', () => {
     expect(argbToHex(-10720320)).toBe('#5c6bc0');
     expect(acc(1)?.color).toBe('#5c6bc0');
     expect(cat(10)?.color).toBe('#42a5f5');
@@ -124,13 +124,13 @@ describe('импорт резервной копии 1Money', () => {
   });
 
   it('валюта — выбранная пользователем', () => {
-    const usd = parseOneMoneyBackup(SQL, bytes, { currency: 'USD' });
+    const usd = parseSqliteBackup(SQL, bytes, { currency: 'USD' });
     expect(new Set(usd.accounts.map((a) => a.currency))).toEqual(new Set(['USD']));
     expect(new Set(plan.transactions.map((t) => t.currency))).toEqual(new Set(['KGS']));
   });
 
   it('без таблицы порядка — сортировка по названию', () => {
-    const p = parseOneMoneyBackup(SQL, makeOneMoneyDb(SQL, { withBu: false }), { currency: 'KGS' });
+    const p = parseSqliteBackup(SQL, makeBackupDb(SQL, { withBu: false }), { currency: 'KGS' });
     expect(ordered('expense', p)).toEqual([
       'Другое',
       'Еда и продукты',
@@ -158,14 +158,14 @@ describe('импорт резервной копии 1Money', () => {
 
   it('не изменяет исходный файл', () => {
     const copy = new Uint8Array(bytes);
-    parseOneMoneyBackup(SQL, bytes, { currency: 'KGS' });
+    parseSqliteBackup(SQL, bytes, { currency: 'KGS' });
     expect(bytes).toEqual(copy);
   });
 
   it('не принимает базу без нужных таблиц', () => {
     const db = new SQL.Database();
     db.run('CREATE TABLE other (x INTEGER)');
-    const p = parseOneMoneyBackup(SQL, db.export(), { currency: 'KGS' });
+    const p = parseSqliteBackup(SQL, db.export(), { currency: 'KGS' });
     db.close();
     expect(p.errors[0].message).toMatch(/нет таблицы/);
     expect(p.transactions).toEqual([]);
@@ -174,7 +174,7 @@ describe('импорт резервной копии 1Money', () => {
   it('повторный импорт обновляет записи, а не дублирует', async () => {
     const { repos } = await setupTestRepos();
     await applyImportPlan(plan, repos);
-    await applyImportPlan(parseOneMoneyBackup(SQL, bytes, { currency: 'KGS' }), repos);
+    await applyImportPlan(parseSqliteBackup(SQL, bytes, { currency: 'KGS' }), repos);
     expect(await repos.transactions.getAll()).toHaveLength(8);
     expect(await repos.accounts.getAll()).toHaveLength(2);
     expect(await repos.categories.getAll()).toHaveLength(9);

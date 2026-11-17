@@ -43,9 +43,7 @@ describe('знакомство с приложением', () => {
     await user.click(screen.getByRole('button', { name: 'Начать' }));
 
     expect(screen.getByRole('heading', { name: 'Первый счёт' })).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: 'Импортировать резервную копию' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Импортировать данные' })).toBeInTheDocument();
 
     await user.clear(screen.getByLabelText('Текущий баланс'));
     await user.type(screen.getByLabelText('Текущий баланс'), '1500');

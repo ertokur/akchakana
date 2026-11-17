@@ -17,7 +17,7 @@ export interface RowError {
 
 /** Результат разбора файла: что будет записано после подтверждения. */
 export interface ImportPlan {
-  format: 'onemoney' | 'csv' | 'own';
+  format: 'backup' | 'csv' | 'own';
   accounts: Account[];
   categories: Category[];
   transactions: Transaction[];

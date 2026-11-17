@@ -1,7 +1,7 @@
 import { ChartPie, CircleDot, Ellipsis, ListOrdered, Wallet } from 'lucide-react';
 import { navigate, PATHS, type Route } from './router';
 
-// Порядок вкладок как в 1Money: счета, категории, операции, обзор.
+// Порядок вкладок: счета, категории, операции, обзор.
 const ITEMS: { route: Route; label: string; icon: typeof Wallet; match: Route[] }[] = [
   { route: 'accounts', label: 'Счета', icon: Wallet, match: ['accounts', 'debts'] },
   { route: 'home', label: 'Категории', icon: CircleDot, match: ['home'] },
@@ -11,7 +11,16 @@ const ITEMS: { route: Route; label: string; icon: typeof Wallet; match: Route[] 
     route: 'more',
     label: 'Ещё',
     icon: Ellipsis,
-    match: ['more', 'budgets', 'categories', 'recurring', 'settings', 'import', 'export'],
+    match: [
+      'more',
+      'budgets',
+      'categories',
+      'recurring',
+      'settings',
+      'import',
+      'export',
+      'changelog',
+    ],
   },
 ];
 

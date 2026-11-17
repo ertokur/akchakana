@@ -14,11 +14,11 @@ import { guessAccountKind, guessCategoryIcon } from './guess';
 import { emptyPlan, type ImportPlan } from './types';
 
 /**
- * Адаптер резервной копии 1Money (SQLite). Файл открывается в памяти через sql.js,
+ * Адаптер резервной копии в формате SQLite (сторонние приложения учёта). Файл открывается в памяти через sql.js,
  * выполняются только SELECT — исходный файл не изменяется.
  *
  * Копия содержит ежедневные снимки (`_b_i`) всей базы. Берётся только последний снимок:
- * записей, которых в нём нет, в 1Money уже не существует (в старых снимках лежат,
+ * записей, которых в нём нет, в исходном приложении уже не существует (в старых снимках лежат,
  * например, стандартные английские категории прошлых установок и удалённые счета).
  *
  * Колонки (сокращённые имена — так в самом файле):
@@ -33,10 +33,10 @@ import { emptyPlan, type ImportPlan } from './types';
  */
 
 /**
- * Номера иконок 1Money → наши ключи (подобраны по реальной копии).
+ * Номера иконок из резервной копии → наши ключи (подобраны по реальной копии).
  * Неизвестный номер — иконка подбирается по названию категории.
  */
-export const ONE_MONEY_ICON_MAP: Record<number, string> = {
+export const BACKUP_ICON_MAP: Record<number, string> = {
   1: 'dots',
   3: 'piggy-bank',
   4: 'credit-card',
@@ -91,21 +91,21 @@ export function argbToHex(value: SqlValue): string | null {
   return `#${((n >>> 0) & 0xffffff).toString(16).padStart(6, '0')}`;
 }
 
-export const oneMoneyIds = {
-  transaction: (id: SqlValue) => `onemoney-tr-${str(id)}`,
-  entity: (id: SqlValue) => `onemoney-de-${str(id)}`,
+export const backupIds = {
+  transaction: (id: SqlValue) => `ext-tr-${str(id)}`,
+  entity: (id: SqlValue) => `ext-de-${str(id)}`,
 };
 
-export interface OneMoneyOptions {
+export interface SqliteBackupOptions {
   currency: CurrencyCode;
   /** Момент импорта — для createdAt/updatedAt. */
   now?: number;
 }
 
-export function parseOneMoneyBackup(
+export function parseSqliteBackup(
   SQL: SqlJsStatic,
   bytes: Uint8Array,
-  { currency, now = Date.now() }: OneMoneyOptions,
+  { currency, now = Date.now() }: SqliteBackupOptions,
 ): ImportPlan {
   // sql.js работает с копией байтов в памяти; оригинал не трогаем.
   const db = new SQL.Database(new Uint8Array(bytes));
@@ -117,11 +117,11 @@ export function parseOneMoneyBackup(
 }
 
 function readBackup(db: Database, currency: CurrencyCode, now: number): ImportPlan {
-  const plan = emptyPlan('onemoney');
+  const plan = emptyPlan('backup');
   for (const table of ['tr', 'de']) {
     if (!hasTable(db, table)) {
       plan.errors.push({
-        message: `В файле нет таблицы «${table}» — это не резервная копия 1Money`,
+        message: `В файле нет таблицы «${table}» — это не поддерживаемая резервная копия`,
       });
       return plan;
     }
@@ -196,10 +196,10 @@ function readBackup(db: Database, currency: CurrencyCode, now: number): ImportPl
   let colorIndex = 0;
   const fallbackColor = () => PALETTE[colorIndex++ % PALETTE.length];
   const meta = (id: string) => ({
-    id: oneMoneyIds.entity(id),
+    id: backupIds.entity(id),
     createdAt: now,
     updatedAt: now,
-    source: { kind: 'onemoney' as const, externalId: `onemoney:de:${id}` },
+    source: { kind: 'backup' as const, externalId: `backup:de:${id}` },
   });
 
   // 4. Счета с начальными балансами.
@@ -227,7 +227,7 @@ function readBackup(db: Database, currency: CurrencyCode, now: number): ImportPl
       initialBalance,
       color: (r && argbToHex(r._co)) ?? fallbackColor(),
       icon:
-        ONE_MONEY_ICON_MAP[iconIndex] ??
+        BACKUP_ICON_MAP[iconIndex] ??
         (kind === 'card' ? 'credit-card' : kind === 'savings' ? 'piggy-bank' : 'wallet'),
       archived: r ? num(r._ar) === 1 : false,
       order: r && isSet(r._a_o) ? num(r._a_o) : accounts.length,
@@ -243,7 +243,7 @@ function readBackup(db: Database, currency: CurrencyCode, now: number): ImportPl
     const name = (r ? str(r._na).trim() : '') || `Категория ${id}`;
     const parentRaw = r && isSet(r._pi) ? str(r._pi) : undefined;
     const parentRole = parentRaw ? roles.get(parentRaw) : undefined;
-    const parentId = parentRaw && parentRole === role ? oneMoneyIds.entity(parentRaw) : undefined;
+    const parentId = parentRaw && parentRole === role ? backupIds.entity(parentRaw) : undefined;
     if (parentRaw && !parentId) {
       plan.warnings.push(`Подкатегория «${name}»: родитель не найден — импортирована отдельно`);
     }
@@ -255,8 +255,7 @@ function readBackup(db: Database, currency: CurrencyCode, now: number): ImportPl
       ...(parentId ? { parentId } : {}),
       color: (r && argbToHex(r._co)) ?? fallbackColor(),
       icon:
-        ONE_MONEY_ICON_MAP[iconIndex] ??
-        guessCategoryIcon(name, role === 'income' ? 'dollar' : 'tag'),
+        BACKUP_ICON_MAP[iconIndex] ?? guessCategoryIcon(name, role === 'income' ? 'dollar' : 'tag'),
       archived: r ? num(r._ar) === 1 : false,
       order: order.get(id) ?? Number.MAX_SAFE_INTEGER,
     });
@@ -294,13 +293,13 @@ function readBackup(db: Database, currency: CurrencyCode, now: number): ImportPl
       plan.errors.push({ message: `Операция #${id}: неверная дата «${str(r._da)}»` });
       continue;
     }
-    const accountId = oneMoneyIds.entity(r._a_i);
+    const accountId = backupIds.entity(r._a_i);
     if (!accountIds.has(accountId)) {
       plan.errors.push({ message: `Операция #${id}: счёт #${str(r._a_i)} не найден` });
       continue;
     }
     const t: Transaction = {
-      id: oneMoneyIds.transaction(id),
+      id: backupIds.transaction(id),
       type,
       accountId,
       // Знак операции задаёт тип; отрицательная сумма — возврат, хранится как есть.
@@ -312,10 +311,10 @@ function readBackup(db: Database, currency: CurrencyCode, now: number): ImportPl
       tags: [],
       createdAt: now,
       updatedAt: now,
-      source: { kind: 'onemoney', externalId: `onemoney:tr:${id}` },
+      source: { kind: 'backup', externalId: `backup:tr:${id}` },
     };
     if (type === 'transfer') {
-      const toAccountId = oneMoneyIds.entity(r._d_i);
+      const toAccountId = backupIds.entity(r._d_i);
       if (!accountIds.has(toAccountId) || toAccountId === accountId) {
         plan.errors.push({ message: `Операция #${id}: неверный счёт получателя перевода` });
         continue;
@@ -325,7 +324,7 @@ function readBackup(db: Database, currency: CurrencyCode, now: number): ImportPl
       const toAmount = isSet(r._d_m) ? tryParseMinor(str(r._d_m), digits) : null;
       if (toAmount !== null && toAmount !== amount) t.toAmount = toAmount;
     } else if (r._d_i !== null) {
-      const categoryId = oneMoneyIds.entity(r._d_i);
+      const categoryId = backupIds.entity(r._d_i);
       if (categoryIds.has(categoryId)) t.categoryId = categoryId;
     }
     transactions.push(t);

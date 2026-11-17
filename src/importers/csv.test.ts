@@ -264,7 +264,7 @@ describe('собственный формат и круговой тест', () 
           currency: 'JPY',
           initialBalance: 1500,
           order: 3,
-          source: { kind: 'onemoney', externalId: 'onemoney:de:4' },
+          source: { kind: 'backup', externalId: 'backup:de:4' },
         },
         t0,
       ),
@@ -353,7 +353,7 @@ describe('собственный формат и круговой тест', () 
         date: t0 + 3000,
         createdAt: t0,
         updatedAt: t0,
-        source: { kind: 'onemoney', externalId: 'onemoney:tr:105' },
+        source: { kind: 'backup', externalId: 'backup:tr:105' },
       }),
       makeTx({
         id: 't5',

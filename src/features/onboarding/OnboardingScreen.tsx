@@ -52,7 +52,7 @@ const FEATURES: Slide[] = [
   {
     id: 'privacy',
     title: 'Ваши данные — только у вас',
-    text: 'Работает без интернета и ничего не отправляет на серверы. Можно перенести всё из 1Money.',
+    text: 'Работает без интернета и ничего не отправляет на серверы. Можно перенести данные из резервной копии.',
     art: () => <PrivacyIllustration />,
   },
 ];
@@ -63,7 +63,7 @@ const START_STEP = STEPS - 1;
 
 /**
  * Первый запуск: многостраничное знакомство с приложением, затем создание первого счёта
- * или импорт резервной копии 1Money.
+ * или импорт данных.
  */
 export function OnboardingScreen() {
   const [step, setStep] = useState(0);
@@ -173,7 +173,8 @@ function Welcome() {
       <div className="ob-fade-up flex flex-col gap-2" style={{ animationDelay: '900ms' }}>
         <h1 className="text-3xl font-bold">Акчакана</h1>
         <p className="mx-auto max-w-xs text-muted">
-          Личный учёт денег. Все данные хранятся только на этом устройстве и работают без интернета.
+          Круг расходов, бюджеты, счета и статистика. Без интернета, данные — только на вашем
+          телефоне.
         </p>
       </div>
       <div className="ob-fade-up" style={{ animationDelay: '1200ms' }}>
@@ -202,7 +203,7 @@ function FeatureSlide({ slide, index }: { slide: Slide; index: number }) {
   );
 }
 
-/** Последний шаг: первый счёт или импорт из 1Money. */
+/** Последний шаг: первый счёт или импорт данных. */
 function StartStep() {
   const settings = useData((s) => s.settings);
   const updateSettings = useData((s) => s.updateSettings);
@@ -300,14 +301,14 @@ function StartStep() {
         style={{ animationDelay: '240ms' }}
       >
         <h2 className="flex items-center gap-2 font-semibold">
-          <FileUp size={20} aria-hidden="true" /> Уже вели учёт в 1Money?
+          <FileUp size={20} aria-hidden="true" /> Импорт данных
         </h2>
         <p className="text-sm text-muted">
-          Импортируйте резервную копию: счета, категории, подкатегории и операции перенесутся. Файл
+          Уже вели учёт? Перенесите счета, категории и операции из резервной копии или CSV. Файл
           только читается и никуда не отправляется.
         </p>
         <Button variant="secondary" onClick={importInstead}>
-          Импортировать резервную копию
+          Импортировать данные
         </Button>
       </section>
     </div>

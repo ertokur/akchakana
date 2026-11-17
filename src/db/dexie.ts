@@ -1,4 +1,5 @@
 import Dexie, { type Table } from 'dexie';
+import { normalizeRecord } from './legacyIds';
 import type {
   Account,
   BackupSnapshot,
@@ -66,6 +67,20 @@ export class AppDb extends Dexie {
           }),
       );
     this.version(3).stores(SCHEMA_V3);
+    // v4: единые ID и источник для записей из резервных копий SQLite (см. legacyIds.ts).
+    this.version(4)
+      .stores(SCHEMA_V3)
+      .upgrade(async (tx) => {
+        for (const name of DB_TABLES) {
+          if (name === 'settings') continue;
+          const table = tx.table(name);
+          const rows = await table.toArray();
+          const changed = rows.filter((r) => normalizeRecord(r) !== r);
+          if (changed.length === 0) continue;
+          await table.bulkDelete(changed.map((r) => r.id));
+          await table.bulkPut(changed.map((r) => normalizeRecord(r)));
+        }
+      });
   }
 }
 

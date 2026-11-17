@@ -3,6 +3,8 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+    # Изменения только в документации не публикуются (и не требуют новой версии).
+    paths-ignore: ['**/*.md']
   workflow_dispatch:
 
 permissions:
@@ -17,8 +19,21 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+      # Каждый деплой — новая версия: если тег v<version> уже есть, публикация останавливается.
+      # Запись о версии в src/changelog.ts проверяет тест changelog.test.ts.
+      - id: version
+        name: Проверка новой версии
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" > /dev/null; then
+            echo "::error::Версия $VERSION уже опубликована. Поднимите version в package.json и добавьте запись в src/changelog.ts."
+            exit 1
+          fi
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -43,3 +58,15 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # Опубликованная версия отмечается тегом v<version>.
+  tag:
+    needs: [build, deploy]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          git tag "v${{ needs.build.outputs.version }}"
+          git push origin "v${{ needs.build.outputs.version }}"

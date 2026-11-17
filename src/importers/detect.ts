@@ -23,7 +23,7 @@ export function detectFile(bytes: Uint8Array): DetectedFile {
   if (isSqlite(bytes)) return { kind: 'sqlite', bytes };
   // Нулевые байты в начале — двоичный файл, а не CSV.
   if (bytes.subarray(0, 1024).includes(0)) {
-    return { kind: 'unknown', reason: 'Файл не похож ни на резервную копию 1Money, ни на CSV' };
+    return { kind: 'unknown', reason: 'Файл не похож ни на резервную копию, ни на CSV' };
   }
   const { text, encoding } = decodeText(bytes);
   return isOwnCsv(text) ? { kind: 'own', text, encoding } : { kind: 'csv', text, encoding };

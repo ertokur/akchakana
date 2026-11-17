@@ -6,7 +6,7 @@ export type CurrencyCode = string;
 export type Id = string;
 
 export interface SourceRef {
-  kind: 'onemoney' | 'csv';
+  kind: 'backup' | 'csv';
   externalId: string;
 }
 

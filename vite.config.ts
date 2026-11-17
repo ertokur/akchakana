@@ -46,7 +46,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Всё приложение, включая wasm для импорта 1Money и шрифты, доступно офлайн.
+        // Всё приложение, включая wasm для импорта резервных копий и шрифты, доступно офлайн.
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,wasm}'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         navigateFallback: 'index.html',

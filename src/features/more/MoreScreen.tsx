@@ -5,6 +5,7 @@ import {
   Repeat,
   Settings,
   Shapes,
+  Sparkles,
   Target,
   Upload,
 } from 'lucide-react';
@@ -17,9 +18,15 @@ const ITEMS: { route: Route; label: string; hint: string; icon: typeof Shapes }[
   { route: 'categories', label: 'Категории', hint: 'Порядок, подкатегории, скрытие', icon: Shapes },
   { route: 'recurring', label: 'Регулярные платежи', hint: 'Подписки и напоминания', icon: Repeat },
   { route: 'debts', label: 'Долги', hint: 'Мне должны и я должен', icon: HandCoins },
-  { route: 'import', label: 'Импорт', hint: 'Резервная копия 1Money или CSV', icon: Upload },
+  { route: 'import', label: 'Импорт', hint: 'Резервная копия или CSV', icon: Upload },
   { route: 'export', label: 'Экспорт', hint: 'Сохранить все данные в CSV', icon: Download },
   { route: 'settings', label: 'Настройки', hint: 'Валюта, тема, PIN-код', icon: Settings },
+  {
+    route: 'changelog',
+    label: 'Что нового',
+    hint: 'Список изменений по версиям',
+    icon: Sparkles,
+  },
 ];
 
 export function MoreScreen() {
@@ -47,7 +54,10 @@ export function MoreScreen() {
             </li>
           ))}
         </ul>
-        <MadeWith />
+        <div className="mt-auto flex flex-col items-center gap-1 pt-8 pb-2">
+          <MadeWith className="" />
+          <p className="tabular text-xs text-muted">Версия {__APP_VERSION__.replace(/\.0$/, '')}</p>
+        </div>
       </div>
     </Screen>
   );

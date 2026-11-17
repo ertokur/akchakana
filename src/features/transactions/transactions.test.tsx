@@ -81,7 +81,7 @@ describe('экран операций', () => {
     await waitFor(() =>
       expect(screen.queryByRole('dialog', { name: 'Категория расхода' })).not.toBeInTheDocument(),
     );
-    // Подкатегории — строкой значков в самой шторке, как в 1Money; по умолчанию выбрана категория.
+    // Подкатегории — строкой значков в самой шторке; по умолчанию выбрана категория.
     const subs = within(sheet).getByRole('radiogroup', { name: 'Подкатегория' });
     expect(within(subs).getByRole('radio', { name: 'Продукты, без подкатегории' })).toBeChecked();
     await user.click(within(subs).getByRole('radio', { name: 'Рынок' }));

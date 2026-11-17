@@ -1,5 +1,5 @@
 import Dexie from 'dexie';
-import { AppDb, SCHEMA_V1, SCHEMA_V2 } from '../db/dexie';
+import { AppDb, SCHEMA_V1, SCHEMA_V2, SCHEMA_V3 } from '../db/dexie';
 import { defaultCategories, makeAccount } from '../db/seed';
 import type { Transaction } from '../domain/types';
 import { createDexieRepositories } from './dexieRepositories';
@@ -50,14 +50,14 @@ describe('репозитории Dexie', () => {
     const repos = createDexieRepositories(db);
     await repos.transactions.bulkPut([
       tx({ id: 'x1', date: 100, categoryId: 'food' }),
-      tx({ id: 'x2', date: 200, source: { kind: 'onemoney', externalId: 'onemoney:5' } }),
+      tx({ id: 'x2', date: 200, source: { kind: 'backup', externalId: 'backup:5' } }),
       tx({ id: 'x3', date: 300, type: 'transfer', toAccountId: 'b' }),
     ]);
     expect((await repos.transactions.listInRange(100, 300)).map((t) => t.id).sort()).toEqual([
       'x1',
       'x2',
     ]);
-    expect((await repos.transactions.findBySourceIds(['onemoney:5']))[0].id).toBe('x2');
+    expect((await repos.transactions.findBySourceIds(['backup:5']))[0].id).toBe('x2');
     expect(await repos.transactions.countReferences('a')).toBe(3);
     expect(await repos.transactions.countReferences('b')).toBe(1);
     expect(await repos.transactions.countReferences('food')).toBe(1);
@@ -70,6 +70,20 @@ describe('репозитории Dexie', () => {
     const s = await repos.settings.get();
     expect(s.defaultCurrency).toBe('USD');
     expect(s.weekStartsOn).toBe(1);
+  });
+
+  it('одновременные изменения настроек не теряются', async () => {
+    const repos = createDexieRepositories(db);
+    await Promise.all([
+      repos.settings.update({ theme: 'dark' }),
+      repos.settings.update({ weekStartsOn: 0 }),
+      repos.settings.update({ lastExportAt: 5 }),
+    ]);
+    expect(await repos.settings.get()).toMatchObject({
+      theme: 'dark',
+      weekStartsOn: 0,
+      lastExportAt: 5,
+    });
   });
 
   it('atomically откатывает всё при ошибке', async () => {
@@ -96,6 +110,71 @@ describe('репозитории Dexie', () => {
 });
 
 describe('миграции схемы', () => {
+  it('v3 → v4 приводит ID и источник записей из резервной копии к единому виду', async () => {
+    const name = uniqueName();
+    const v3 = new Dexie(name);
+    v3.version(3).stores(SCHEMA_V3);
+    const src = (kind: string, ext: string) => ({ kind, externalId: ext });
+    await v3
+      .table('accounts')
+      .put({ id: 'legacy-de-1', name: 'Карта', source: src('legacy', 'legacy:de:1') });
+    await v3.table('categories').bulkPut([
+      { id: 'legacy-de-10', name: 'Еда', source: src('legacy', 'legacy:de:10') },
+      { id: 'legacy-de-11', name: 'Рынок', parentId: 'legacy-de-10' },
+      { id: 'own-uuid', name: 'Своя', parentId: 'legacy-de-10' },
+    ]);
+    await v3.table('transactions').bulkPut([
+      {
+        id: 'legacy-tr-5',
+        type: 'expense',
+        accountId: 'legacy-de-1',
+        categoryId: 'legacy-de-11',
+        amount: 100,
+        date: 1,
+        tags: [],
+        isRefund: false,
+        source: src('legacy', 'legacy:tr:5'),
+      },
+      {
+        id: 'manual',
+        type: 'expense',
+        accountId: 'legacy-de-1',
+        amount: 1,
+        date: 2,
+        tags: [],
+        isRefund: false,
+      },
+    ]);
+    await v3.table('budgets').put({ id: 'b', categoryId: 'legacy-de-10' });
+    await v3
+      .table('recurring')
+      .put({ id: 'r', template: { accountId: 'legacy-de-1', categoryId: 'legacy-de-10' } });
+    v3.close();
+
+    const db = new AppDb(name);
+    expect(db.verno).toBe(4);
+    expect((await db.accounts.toArray()).map((a) => [a.id, a.source])).toEqual([
+      ['ext-de-1', { kind: 'backup', externalId: 'backup:de:1' }],
+    ]);
+    const cats = Object.fromEntries((await db.categories.toArray()).map((c) => [c.id, c.parentId]));
+    expect(cats).toEqual({
+      'ext-de-10': undefined,
+      'ext-de-11': 'ext-de-10',
+      'own-uuid': 'ext-de-10',
+    });
+    const txs = await db.transactions.orderBy('date').toArray();
+    expect(txs.map((t) => [t.id, t.accountId, t.categoryId, t.source?.externalId])).toEqual([
+      ['ext-tr-5', 'ext-de-1', 'ext-de-11', 'backup:tr:5'],
+      ['manual', 'ext-de-1', undefined, undefined],
+    ]);
+    expect((await db.budgets.get('b'))?.categoryId).toBe('ext-de-10');
+    expect((await db.recurring.get('r'))?.template).toEqual({
+      accountId: 'ext-de-1',
+      categoryId: 'ext-de-10',
+    });
+    await db.delete();
+  });
+
   it('v1 → v2 заполняет tags и isRefund', async () => {
     const name = uniqueName();
     const v1 = new Dexie(name);
@@ -112,7 +191,7 @@ describe('миграции схемы', () => {
       [[], false],
       [[], true],
     ]);
-    expect(db.verno).toBe(3);
+    expect(db.verno).toBe(4);
     await db.delete();
   });
 
@@ -133,7 +212,7 @@ describe('миграции схемы', () => {
     expect(settings.autoBackupEnabled).toBe(true);
     expect(settings.autoBackupFrequency).toBe('weekly');
     expect(await repos.backups.list()).toEqual([]);
-    expect(db.verno).toBe(3);
+    expect(db.verno).toBe(4);
     await db.delete();
   });
 

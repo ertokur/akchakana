@@ -9,7 +9,7 @@ import { usePeriod, usePeriodOptions } from '../shared/hooks';
 import { filterTransactions } from '../transactions/grouping';
 
 /**
- * Верх экрана «Счета» как в 1Money: категории доходов за период.
+ * Верх экрана «Счета»: категории доходов за период.
  * Нажатие на доход открывает ввод суммы с этой категорией, кнопка «Перевод» — перевод между счетами.
  */
 export function IncomeStrip() {

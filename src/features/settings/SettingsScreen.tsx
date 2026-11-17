@@ -175,10 +175,6 @@ export function SettingsScreen() {
             <Trash2 size={18} aria-hidden="true" /> Сбросить все данные
           </Button>
         </Card>
-
-        <p className="text-center text-xs text-muted">
-          Акчакана {__APP_VERSION__} · данные хранятся только на этом устройстве
-        </p>
       </div>
 
       {pinSheet && (

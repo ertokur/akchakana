@@ -97,7 +97,7 @@ function EditorForm({
   const [tags, setTags] = useState((original?.tags ?? preset?.tags ?? []).join(', '));
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  // Новая операция без категории сразу открывает выбор категории, как в 1Money.
+  // Новая операция без категории сразу открывает выбор категории.
   const [picker, setPicker] = useState<'account' | 'target' | 'category' | null>(() =>
     editor.mode === 'new' && !preset?.categoryId && editor.type !== 'transfer' ? 'category' : null,
   );

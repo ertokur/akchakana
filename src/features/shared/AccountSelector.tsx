@@ -8,7 +8,7 @@ import { BottomSheet } from '../../ui/BottomSheet';
 import { IconBadge } from '../../ui/Icon';
 import { useBalances } from './hooks';
 
-/** Верх экрана как в 1Money: выбранный счёт (или «Все счета») и его баланс; нажатие — выбор счёта. */
+/** Верх экрана: выбранный счёт (или «Все счета») и его баланс; нажатие — выбор счёта. */
 export function AccountSelector() {
   const accounts = useData((s) => s.accounts);
   const defaultCurrency = useData((s) => s.settings.defaultCurrency);

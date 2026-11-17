@@ -249,12 +249,12 @@ export function StatsIllustration() {
   );
 }
 
-/** 5. Данные только на устройстве, офлайн, импорт из 1Money. */
+/** 5. Данные только на устройстве, офлайн, импорт данных. */
 export function PrivacyIllustration() {
   const badges = [
     { icon: <CloudOff size={18} />, label: 'Офлайн', x: '6%', y: '14%' },
     { icon: <Lock size={18} />, label: 'PIN-код', x: '66%', y: '10%' },
-    { icon: <FileUp size={18} />, label: '1Money', x: '62%', y: '72%' },
+    { icon: <FileUp size={18} />, label: 'Импорт', x: '62%', y: '72%' },
   ];
   return (
     <Stage>

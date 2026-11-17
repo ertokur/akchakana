@@ -13,7 +13,8 @@ export type Route =
   | 'debts'
   | 'settings'
   | 'import'
-  | 'export';
+  | 'export'
+  | 'changelog';
 
 const ROUTES: Record<string, Route> = {
   '': 'home',
@@ -29,6 +30,7 @@ const ROUTES: Record<string, Route> = {
   '/settings': 'settings',
   '/settings/import': 'import',
   '/settings/export': 'export',
+  '/changelog': 'changelog',
 };
 
 export const PATHS: Record<Route, string> = {
@@ -44,6 +46,7 @@ export const PATHS: Record<Route, string> = {
   settings: '/settings',
   import: '/settings/import',
   export: '/settings/export',
+  changelog: '/changelog',
 };
 
 export function parseRoute(hash: string): Route {

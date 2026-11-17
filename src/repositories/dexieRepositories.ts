@@ -45,11 +45,14 @@ function settingsRepository(db: AppDb): SettingsRepository {
   });
   return {
     get,
-    update: async (patch) => {
-      const next: Settings = { ...(await get()), ...patch, id: 'settings' };
-      await db.settings.put(next);
-      return next;
-    },
+    // Чтение и запись в одной транзакции: одновременные изменения (например, автосохранение
+    // и смена темы) не затирают друг друга.
+    update: (patch) =>
+      db.transaction('rw', db.settings, async () => {
+        const next: Settings = { ...(await get()), ...patch, id: 'settings' };
+        await db.settings.put(next);
+        return next;
+      }),
   };
 }
 

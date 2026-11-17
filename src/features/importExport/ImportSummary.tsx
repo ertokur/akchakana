@@ -49,7 +49,7 @@ export function ImportSummary({ plan, timeZone }: { plan: ImportPlan; timeZone: 
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-sm text-muted">Сверьте с балансами в 1Money.</p>
+          <p className="mt-2 text-sm text-muted">Сверьте с балансами в прежнем приложении.</p>
         </Card>
       )}
       <Card>

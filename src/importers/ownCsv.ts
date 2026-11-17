@@ -11,6 +11,7 @@ import type {
   Transaction,
   TransactionType,
 } from '../domain/types';
+import { normalizeBackupExternalId, normalizeRecord } from '../db/legacyIds';
 import { stripBom } from './encoding';
 import { emptyPlan, type ImportPlan } from './types';
 
@@ -144,6 +145,13 @@ export function parseOwnCsv(text: string): ImportPlan {
       plan.errors.push({ row: line, message: (e as Error).message });
     }
   }
+  // ID записей из резервной копии в файлах прежних версий — к текущему виду.
+  plan.accounts = plan.accounts.map(normalizeRecord);
+  plan.categories = plan.categories.map(normalizeRecord);
+  plan.budgets = plan.budgets.map(normalizeRecord);
+  plan.debts = plan.debts.map(normalizeRecord);
+  plan.recurring = plan.recurring.map(normalizeRecord);
+  plan.transactions = plan.transactions.map(normalizeRecord);
   validateReferences(plan);
   return plan;
 }
@@ -183,7 +191,10 @@ function meta(row: OwnRow) {
   let src: SourceRef | undefined;
   if (source) {
     const [kind, ...rest] = source.split('|');
-    if (kind === 'onemoney' || kind === 'csv') src = { kind, externalId: rest.join('|') };
+    const externalId = rest.join('|');
+    if (kind === 'csv') src = { kind, externalId };
+    // Файлы прежних версий называли источник резервной копии иначе — приводим к `backup`.
+    else if (kind) src = { kind: 'backup', externalId: normalizeBackupExternalId(externalId) };
   }
   return {
     id: required(row, 'id', 'ID'),

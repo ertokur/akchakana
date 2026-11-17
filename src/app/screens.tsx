@@ -6,6 +6,7 @@ import { MoreScreen } from '../features/more/MoreScreen';
 import { BudgetsScreen } from '../features/budgets/BudgetsScreen';
 import { RecurringScreen } from '../features/recurring/RecurringScreen';
 import { SettingsScreen } from '../features/settings/SettingsScreen';
+import { ChangelogScreen } from '../features/settings/ChangelogScreen';
 import { HomeScreen } from '../features/home/HomeScreen';
 import { TransactionsScreen } from '../features/transactions/TransactionsScreen';
 
@@ -34,4 +35,5 @@ export const SCREENS: Record<Route, ComponentType> = {
   settings: SettingsScreen,
   import: ImportScreen,
   export: ExportScreen,
+  changelog: ChangelogScreen,
 };

@@ -19,7 +19,7 @@ import {
   type ParsedCsv,
 } from '../../importers/csvGeneric';
 import { detectFile } from '../../importers/detect';
-import { parseOneMoneyBackup } from '../../importers/oneMoneyBackup';
+import { parseSqliteBackup } from '../../importers/sqliteBackup';
 import { parseOwnCsv } from '../../importers/ownCsv';
 import type { ImportPlan } from '../../importers/types';
 import { byOrder, useData } from '../../stores/dataStore';
@@ -30,7 +30,7 @@ import { ImportSummary } from './ImportSummary';
 
 type Step =
   | { kind: 'pick' }
-  | { kind: 'onemoney'; bytes: Uint8Array; SQL: SqlJsStatic; currency: string }
+  | { kind: 'backup'; bytes: Uint8Array; SQL: SqlJsStatic; currency: string }
   | { kind: 'own'; plan: ImportPlan }
   | { kind: 'csv'; csv: ParsedCsv; encoding: string };
 
@@ -58,7 +58,7 @@ export function ImportScreen() {
         // sql.js и wasm загружаются только когда действительно нужны.
         const { loadSqlJs } = await import('../../importers/sqlLoader');
         const SQL = await loadSqlJs();
-        setStep({ kind: 'onemoney', bytes, SQL, currency: settings.defaultCurrency });
+        setStep({ kind: 'backup', bytes, SQL, currency: settings.defaultCurrency });
       } else if (detected.kind === 'own') {
         setStep({ kind: 'own', plan: parseOwnCsv(detected.text) });
       } else {
@@ -86,11 +86,11 @@ export function ImportScreen() {
       {step.kind === 'pick' && (
         <div className="flex flex-col gap-4">
           <Card className="flex flex-col gap-3">
-            <h2 className="font-semibold">Резервная копия 1Money или CSV</h2>
+            <h2 className="font-semibold">Импорт данных</h2>
             <p className="text-sm text-muted">
-              Формат определяется по содержимому файла: резервная копия 1Money (база SQLite, обычно
-              без расширения), CSV, экспортированный из этого приложения, или CSV из другого
-              источника. Файл только читается и не покидает устройство.
+              Формат определяется по содержимому файла: резервная копия (база SQLite, обычно без
+              расширения), CSV, экспортированный из этого приложения, или CSV из другого источника.
+              Файл только читается и не покидает устройство.
             </p>
             <input
               ref={fileRef}
@@ -115,12 +115,12 @@ export function ImportScreen() {
             )}
           </Card>
           <Card className="text-sm text-muted">
-            Где взять копию 1Money: в приложении 1Money откройте настройки → «Резервное копирование»
-            и сохраните файл копии на телефон, затем выберите его здесь.
+            Чтобы перенести данные из другого приложения учёта, сохраните в нём резервную копию на
+            телефон и выберите файл здесь.
           </Card>
         </div>
       )}
-      {step.kind === 'onemoney' && <OneMoneyStep step={step} onChange={setStep} onCancel={reset} />}
+      {step.kind === 'backup' && <BackupStep step={step} onChange={setStep} onCancel={reset} />}
       {step.kind === 'own' && (
         <Confirm plan={step.plan} title="Файл этого приложения" onCancel={reset} />
       )}
@@ -129,17 +129,17 @@ export function ImportScreen() {
   );
 }
 
-function OneMoneyStep({
+function BackupStep({
   step,
   onChange,
   onCancel,
 }: {
-  step: Extract<Step, { kind: 'onemoney' }>;
+  step: Extract<Step, { kind: 'backup' }>;
   onChange: (s: Step) => void;
   onCancel: () => void;
 }) {
   const plan = useMemo(
-    () => parseOneMoneyBackup(step.SQL, step.bytes, { currency: step.currency }),
+    () => parseSqliteBackup(step.SQL, step.bytes, { currency: step.currency }),
     [step.SQL, step.bytes, step.currency],
   );
   const currencies = COMMON_CURRENCIES.includes(step.currency)
@@ -148,13 +148,13 @@ function OneMoneyStep({
   return (
     <Confirm
       plan={plan}
-      title="Резервная копия 1Money"
+      title="Резервная копия"
       onCancel={onCancel}
       before={
         <Card className="flex flex-col gap-2">
           <Field
             label="Валюта копии"
-            hint="В файле 1Money валюта не указана. Все счета и операции получат выбранную валюту."
+            hint="В резервной копии валюта не указана. Все счета и операции получат выбранную валюту."
           >
             {(id) => (
               <Select
