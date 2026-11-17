@@ -31,7 +31,10 @@ export function resolveLanguage(setting: LanguageSetting | undefined): Lang {
 export const useLang = create<{ lang: Lang }>(() => ({ lang: systemLanguage() }));
 
 function applyDocumentLang(lang: Lang): void {
-  if (typeof document !== 'undefined') document.documentElement.lang = lang;
+  if (typeof document === 'undefined') return;
+  document.documentElement.lang = lang;
+  // Заголовок вкладки браузера — название приложения на выбранном языке.
+  document.title = String(DICTS[lang]['app.name']);
 }
 applyDocumentLang(useLang.getState().lang);
 
