@@ -5,6 +5,26 @@ import { defaultCategories, missingDefaultSubcategories } from '../../db/seed';
 import { useData } from '../../stores/dataStore';
 import { makeTx, seedBasic, setupTestRepos } from '../../../tests/helpers';
 
+describe('стандартные категории', () => {
+  it('новое приложение: 5 категорий расходов и только «Зарплата» в доходах', () => {
+    const top = (lang: 'ru' | 'en', kind: string) =>
+      defaultCategories(0, lang)
+        .filter((c) => c.kind === kind && !c.parentId)
+        .sort((a, b) => a.order - b.order)
+        .map((c) => c.name);
+    expect(top('ru', 'expense')).toEqual([
+      'Продукты',
+      'Кафе и рестораны',
+      'Транспорт',
+      'Жильё и ЖКХ',
+      'Прочее',
+    ]);
+    expect(top('ru', 'income')).toEqual(['Зарплата']);
+    expect(top('en', 'expense')).toHaveLength(5);
+    expect(top('en', 'income')).toEqual(['Salary']);
+  });
+});
+
 describe('стандартные подкатегории', () => {
   it('создаются при первом запуске и не дублируются', () => {
     const cats = defaultCategories(0);
@@ -16,7 +36,7 @@ describe('стандартные подкатегории', () => {
   it('добавляются к существующим категориям без подкатегорий', () => {
     const parents = defaultCategories(0).filter((c) => !c.parentId);
     const subs = missingDefaultSubcategories(parents);
-    expect(subs.length).toBeGreaterThan(20);
+    expect(subs.length).toBe(15);
     expect(subs.every((s) => parents.some((p) => p.id === s.parentId))).toBe(true);
   });
 });

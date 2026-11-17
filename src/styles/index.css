@@ -163,6 +163,63 @@
 }
 
 /*
+ * Свайп между вкладками (useTabSwipe): экран уезжает в сторону жеста, новый приезжает
+ * с другой стороны. Нижняя навигация остаётся на месте. При reduced motion переход
+ * не запускается вовсе (см. useTabSwipe.ts), правило ниже — страховка.
+ */
+.tab-nav {
+  view-transition-name: bottom-nav;
+}
+:root[data-tab-swipe]::view-transition-old(root),
+:root[data-tab-swipe]::view-transition-new(root) {
+  animation-duration: 200ms;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+:root[data-tab-swipe='left']::view-transition-old(root) {
+  animation-name: tab-out-left;
+}
+:root[data-tab-swipe='left']::view-transition-new(root) {
+  animation-name: tab-in-right;
+}
+:root[data-tab-swipe='right']::view-transition-old(root) {
+  animation-name: tab-out-right;
+}
+:root[data-tab-swipe='right']::view-transition-new(root) {
+  animation-name: tab-in-left;
+}
+@keyframes tab-out-left {
+  to {
+    transform: translateX(-25%);
+    opacity: 0;
+  }
+}
+@keyframes tab-out-right {
+  to {
+    transform: translateX(25%);
+    opacity: 0;
+  }
+}
+@keyframes tab-in-right {
+  from {
+    transform: translateX(25%);
+    opacity: 0;
+  }
+}
+@keyframes tab-in-left {
+  from {
+    transform: translateX(-25%);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/*
  * Знакомство с приложением (onboarding). Все анимации — transform/opacity, с fill-mode both:
  * при выключенной анимации (prefers-reduced-motion) элементы просто видны в конечном состоянии.
  */

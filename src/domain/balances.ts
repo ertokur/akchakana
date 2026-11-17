@@ -56,6 +56,26 @@ export function summarize(transactions: Transaction[], currency?: CurrencyCode):
   return { income, expense, balance: income - expense };
 }
 
+/**
+ * Доходы и расходы отдельно по каждой валюте (курсы не конвертируются).
+ * Порядок: сначала `first` (основная валюта), затем остальные по алфавиту; валюты только с переводами не попадают.
+ */
+export function summarizeByCurrency(
+  transactions: Transaction[],
+  first?: CurrencyCode,
+): { currency: CurrencyCode; summary: FlowSummary }[] {
+  const byCurrency = new Map<CurrencyCode, Transaction[]>();
+  for (const t of transactions) {
+    if (t.type === 'transfer') continue;
+    const list = byCurrency.get(t.currency);
+    if (list) list.push(t);
+    else byCurrency.set(t.currency, [t]);
+  }
+  return [...byCurrency]
+    .sort(([a], [b]) => (a === first ? -1 : b === first ? 1 : a.localeCompare(b)))
+    .map(([currency, list]) => ({ currency, summary: summarize(list) }));
+}
+
 /** Знаковый эффект операции для итога дня: доход +, расход −, перевод 0. */
 export function signedAmount(t: Transaction): Minor {
   if (t.type === 'income') return t.amount;

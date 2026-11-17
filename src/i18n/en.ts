@@ -174,6 +174,7 @@ export const en: Dict = {
   'period.week': 'Week',
   'period.month': 'Month',
   'period.year': 'Year',
+  'period.all': 'All time',
   'period.previous': 'Previous period',
   'period.next': 'Next period',
   'period.aria': 'Period: {label}. Choose period',
@@ -330,6 +331,9 @@ export const en: Dict = {
   'debt.emptyText': 'Keep track of who owes you and whom you owe.',
   'debt.settledList': 'Settled ({count})',
   'debt.until': 'due {date}',
+  'debt.overdue': 'overdue: {date}',
+  'debt.ofTotal': 'of {amount}',
+  'debt.remaining': '{amount} left',
   'debt.invalidPayment': 'Invalid repayment amount',
   'debt.enterPerson': 'Enter who owes you or whom you owe',
   'debt.enterAmount': 'Enter the debt amount',
@@ -478,6 +482,10 @@ export const en: Dict = {
   'stats.total': 'Total',
   'stats.barsAria': 'Bar chart of income and expenses',
   'stats.noTransactions': 'No transactions.',
+  'stats.allTime': 'All time',
+  'stats.since': 'since {date}',
+  'stats.net': 'Net',
+  'stats.showAllTime': 'Show all time',
 
   // Settings
   'settings.language': 'Language',

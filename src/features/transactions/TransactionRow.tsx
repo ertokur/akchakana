@@ -42,7 +42,7 @@ export const TransactionRow = memo(function TransactionRow({
   const amountClass = isTransfer ? 'text-muted' : t.type === 'income' ? 'text-income' : 'text-text';
 
   return (
-    <li className="relative overflow-hidden rounded-xl">
+    <li className="relative overflow-hidden rounded-xl" data-swipe-ignore="left">
       <div
         className="absolute inset-0 flex items-center justify-end bg-expense pr-5 text-white"
         aria-hidden="true"

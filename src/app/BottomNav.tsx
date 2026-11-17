@@ -30,7 +30,7 @@ export function BottomNav({ current }: { current: Route }) {
   return (
     <nav
       aria-label={t('nav.main')}
-      className="pb-safe pl-safe pr-safe fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 backdrop-blur"
+      className="tab-nav pb-safe pl-safe pr-safe fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 backdrop-blur"
     >
       <ul className="mx-auto flex max-w-lg">
         {ITEMS.map(({ route, label, icon: Icon, match }) => {

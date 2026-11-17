@@ -49,7 +49,7 @@ export function CategoryBubble({
   return (
     <button
       type="button"
-      className="flex min-w-0 flex-col items-center gap-1 rounded-xl px-0.5 py-1 select-none active:scale-95"
+      className={`flex min-w-0 flex-col items-center gap-1 rounded-xl px-0.5 py-1 select-none active:scale-95 ${category.archived ? 'opacity-60' : ''}`}
       style={{ transition: 'transform 120ms ease-out' }}
       aria-label={`${category.name}: ${amountText}${budget ? t('home.bubbleBudget', { percent: Math.round(budget.ratio * 100) }) : ''}. ${editing ? t('home.editCategory') : category.kind === 'income' ? t('home.addIncome') : t('home.addExpense')}`}
       onPointerDown={(e) => {

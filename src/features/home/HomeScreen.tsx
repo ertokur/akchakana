@@ -56,21 +56,28 @@ export function HomeScreen() {
     () => new Map(slices.map((s) => [s.categoryId, s.amount] as [Id | null, number])),
     [slices],
   );
+  // Скрытая категория остаётся на экране, пока у неё есть операции за период:
+  // иначе сумма в кольце не сходится с суммой по кружкам.
   const topLevel = useMemo(
-    () => categories.filter((c) => c.kind === kind && !c.parentId && !c.archived).sort(byOrder),
-    [categories, kind],
+    () =>
+      categories
+        .filter((c) => c.kind === kind && !c.parentId && (!c.archived || amountById.has(c.id)))
+        .sort(byOrder),
+    [categories, kind, amountById],
   );
+  const activeCount = topLevel.filter((c) => !c.archived).length;
 
   const month = monthKey(period.start, settings.timeZone);
   const budgetByCategory = useMemo(() => {
     const map = new Map<Id, BudgetStatus>();
-    if (kind !== 'expense') return map;
+    // Бюджеты помесячные: для «всего времени» не показываем.
+    if (kind !== 'expense' || period.kind === 'all') return map;
     for (const b of budgets) {
       if (!b.categoryId || b.currency !== currency || !isBudgetActive(b, month)) continue;
       map.set(b.categoryId, budgetStatus(b, month, transactions, categories, settings.timeZone));
     }
     return map;
-  }, [budgets, kind, currency, month, transactions, categories, settings.timeZone]);
+  }, [budgets, kind, period.kind, currency, month, transactions, categories, settings.timeZone]);
 
   const mainTotal = kind === 'expense' ? summary.expense : summary.income;
   const otherTotal = kind === 'expense' ? summary.income : summary.expense;
@@ -135,6 +142,8 @@ export function HomeScreen() {
                 </CategoryRing>
               </button>
             </div>
+            {/* Одна категория и «Добавить» — ставим их по центру над кругом, а не в левый угол. */}
+            {topLevel.length <= 1 && <div aria-hidden="true" />}
             {topLevel.map((c) => (
               <CategoryBubble
                 key={c.id}
@@ -170,7 +179,7 @@ export function HomeScreen() {
         <CategoryForm
           category={form === 'new' ? undefined : form}
           kind={kind}
-          siblingsCount={topLevel.length}
+          siblingsCount={activeCount}
           onClose={() => setForm(null)}
         />
       )}

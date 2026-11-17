@@ -11,6 +11,7 @@ import { useTheme } from './useTheme';
 import { SCREENS } from './screens';
 import { useScheduler } from '../features/recurring/useScheduler';
 import { useT } from '../i18n';
+import { useTabSwipe } from './useTabSwipe';
 
 export function App() {
   const loaded = useData((s) => s.loaded);
@@ -54,11 +55,22 @@ export function App() {
       >
         {renderRoute(route)}
       </Suspense>
-      {settings.onboarded && <BottomNav current={route} />}
+      {settings.onboarded && (
+        <>
+          <BottomNav current={route} />
+          <TabSwipe route={route} />
+        </>
+      )}
       <TransactionSheet />
       <Toasts />
     </LockGate>
   );
+}
+
+/** Свайпы между вкладками; внутри LockGate — не работают, пока приложение заблокировано. */
+function TabSwipe({ route }: { route: Route }) {
+  useTabSwipe(route, true);
+  return null;
 }
 
 function renderRoute(route: Route): ReactNode {

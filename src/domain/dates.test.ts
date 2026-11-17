@@ -1,4 +1,5 @@
 import {
+  allTimePeriod,
   customPeriod,
   dayHeading,
   dayKey,
@@ -102,5 +103,29 @@ describe('форматирование дат', () => {
     expect(dayHeading('2026-10-27', now, opts.timeZone)).toBe('Сегодня');
     expect(dayHeading('2026-10-26', now, opts.timeZone)).toBe('Вчера');
     expect(dayHeading('2026-10-20', now, opts.timeZone)).toBe('вторник, 20 октября');
+  });
+});
+
+describe('период «всё время»', () => {
+  it('от месяца первой до месяца последней операции, не меньше текущего месяца', () => {
+    const now = iso('2026-11-17T06:00:00Z');
+    const p = allTimePeriod([iso('2023-10-16T10:00:00Z'), iso('2025-05-01T10:00:00Z')], now, opts);
+    expect(p.kind).toBe('all');
+    expect(dayKey(p.start, opts.timeZone)).toBe('2023-10-01');
+    expect(dayKey(p.end, opts.timeZone)).toBe('2026-12-01');
+    // Запланированная операция в будущем тоже попадает в период.
+    const future = allTimePeriod([iso('2027-02-10T10:00:00Z')], now, opts);
+    expect(dayKey(future.start, opts.timeZone)).toBe('2026-11-01');
+    expect(dayKey(future.end, opts.timeZone)).toBe('2027-03-01');
+    // Без операций — текущий месяц.
+    const empty = allTimePeriod([], now, opts);
+    expect(dayKey(empty.start, opts.timeZone)).toBe('2026-11-01');
+  });
+
+  it('подпись и стрелки', () => {
+    const p = allTimePeriod([iso('2024-01-05T10:00:00Z')], iso('2026-11-17T06:00:00Z'), opts);
+    expect(periodLabel(p, opts.timeZone)).toBe('Всё время');
+    expect(shiftPeriod(p, 1, opts)).toBe(p);
+    expect(monthsOfPeriod(p, opts.timeZone)).toHaveLength(35);
   });
 });

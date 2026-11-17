@@ -12,6 +12,7 @@ const KINDS: { value: Exclude<PeriodKind, 'custom'>; label: DictKey }[] = [
   { value: 'week', label: 'period.week' },
   { value: 'month', label: 'period.month' },
   { value: 'year', label: 'period.year' },
+  { value: 'all', label: 'period.all' },
 ];
 
 /**
@@ -49,10 +50,11 @@ export function PeriodSwitcher() {
   };
 
   const label = periodLabel(period, opts.timeZone);
+  const allTime = period.kind === 'all';
 
   return (
     <div className="flex items-center justify-between">
-      <IconButton label={t('period.previous')} onClick={() => shift(-1)}>
+      <IconButton label={t('period.previous')} onClick={() => shift(-1)} disabled={allTime}>
         <ChevronLeft />
       </IconButton>
       <button
@@ -64,7 +66,7 @@ export function PeriodSwitcher() {
         <CalendarDays size={18} className="text-accent" aria-hidden="true" />
         <span className="first-letter:uppercase">{label}</span>
       </button>
-      <IconButton label={t('period.next')} onClick={() => shift(1)}>
+      <IconButton label={t('period.next')} onClick={() => shift(1)} disabled={allTime}>
         <ChevronRight />
       </IconButton>
       <BottomSheet open={open} onClose={() => setOpen(false)} title={t('period.title')}>
@@ -80,7 +82,7 @@ export function PeriodSwitcher() {
                   setPeriod({ kind: k.value, anchor: Math.min(Date.now(), period.end - 1) });
                   setOpen(false);
                 }}
-                className={`min-h-12 rounded-xl font-medium ${selection.kind === k.value ? 'bg-accent text-accent-fg' : 'bg-surface-2'}`}
+                className={`min-h-12 rounded-xl font-medium ${k.value === 'all' ? 'col-span-2' : ''} ${selection.kind === k.value ? 'bg-accent text-accent-fg' : 'bg-surface-2'}`}
               >
                 {t(k.label)}
               </button>
@@ -90,7 +92,10 @@ export function PeriodSwitcher() {
             variant="secondary"
             onClick={() => {
               setPeriod({
-                kind: selection.kind === 'custom' ? 'month' : selection.kind,
+                kind:
+                  selection.kind === 'custom' || selection.kind === 'all'
+                    ? 'month'
+                    : selection.kind,
                 anchor: Date.now(),
               });
               setOpen(false);

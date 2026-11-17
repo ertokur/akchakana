@@ -188,6 +188,7 @@ export const ru = {
   'period.week': 'Неделя',
   'period.month': 'Месяц',
   'period.year': 'Год',
+  'period.all': 'Всё время',
   'period.previous': 'Предыдущий период',
   'period.next': 'Следующий период',
   'period.aria': 'Период: {label}. Выбрать период',
@@ -340,6 +341,9 @@ export const ru = {
   'debt.emptyText': 'Записывайте, кто и сколько вам должен и кому должны вы.',
   'debt.settledList': 'Закрытые ({count})',
   'debt.until': 'до {date}',
+  'debt.overdue': 'просрочен: {date}',
+  'debt.ofTotal': 'из {amount}',
+  'debt.remaining': 'Осталось {amount}',
   'debt.invalidPayment': 'Неверная сумма погашения',
   'debt.enterPerson': 'Укажите, кто должен или кому',
   'debt.enterAmount': 'Введите сумму долга',
@@ -475,6 +479,10 @@ export const ru = {
   'stats.total': 'Всего',
   'stats.barsAria': 'Столбчатая диаграмма доходов и расходов',
   'stats.noTransactions': 'Нет операций.',
+  'stats.allTime': 'За всё время',
+  'stats.since': 'с {date}',
+  'stats.net': 'Итого',
+  'stats.showAllTime': 'Показать всё время',
 
   // Настройки
   'settings.language': 'Язык',

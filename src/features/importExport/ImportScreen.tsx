@@ -28,6 +28,7 @@ import { useUi } from '../../stores/uiStore';
 import { Button, Card, Field, Select, Toggle } from '../../ui/controls';
 import { Screen } from '../../ui/Screen';
 import { ImportSummary } from './ImportSummary';
+import { usePeriod } from '../shared/hooks';
 import { useT } from '../../i18n';
 
 type Step =
@@ -185,6 +186,8 @@ function Confirm({
   const load = useData((s) => s.load);
   const updateSettings = useData((s) => s.updateSettings);
   const toast = useUi((s) => s.toast);
+  const setPeriod = useUi((s) => s.setPeriod);
+  const period = usePeriod();
   const [busy, setBusy] = useState(false);
   const total =
     plan.transactions.length +
@@ -204,6 +207,10 @@ function Confirm({
         await useData.getState().saveCategories(defaultCategories());
       }
       if (!settings.onboarded) await updateSettings({ onboarded: true });
+      // Иначе после импорта истории виден только текущий месяц и кажется, что операций не хватает.
+      if (plan.transactions.some((x) => x.date < period.start || x.date >= period.end)) {
+        setPeriod({ kind: 'all', anchor: Date.now() });
+      }
       toast({ text: t('import.done', { count: plan.transactions.length }) });
       navigate('home');
     } catch (e) {

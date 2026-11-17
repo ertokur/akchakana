@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { ChartConfiguration } from 'chart.js';
 import { ChevronLeft, TrendingDown, TrendingUp } from 'lucide-react';
-import { summarize } from '../../domain/balances';
+import { summarize, summarizeByCurrency } from '../../domain/balances';
 import {
   formatDate,
   formatInTz,
@@ -19,7 +19,7 @@ import {
   type BucketPoint,
   type CategorySlice,
 } from '../../domain/stats';
-import type { CategoryKind, Id } from '../../domain/types';
+import type { CategoryKind, Id, Transaction } from '../../domain/types';
 import { useData } from '../../stores/dataStore';
 import { useUi } from '../../stores/uiStore';
 import { Card, EmptyState, SegmentedControl } from '../../ui/controls';
@@ -61,6 +61,15 @@ export function StatsScreen() {
   );
   const sumNow = summarize(current, currency);
   const sumPrev = summarize(previous, currency);
+  const allTime = period.kind === 'all';
+  const firstDate = useMemo(
+    () => (current.length ? Math.min(...current.map((x) => x.date)) : undefined),
+    [current],
+  );
+  const since =
+    allTime && firstDate !== undefined
+      ? t('stats.since', { date: formatDate(firstDate, settings.timeZone, 'dayShortYear') })
+      : undefined;
 
   const slices = useMemo(
     () => totalsByCategory(current, categories, kind, currency, drill ? { parentId: drill } : {}),
@@ -95,14 +104,24 @@ export function StatsScreen() {
             prev={sumPrev.expense}
             currency={currency}
             higherIsBad
+            note={allTime ? (since ?? '') : undefined}
           />
           <CompareCard
             label={t('common.incomes')}
             value={sumNow.income}
             prev={sumPrev.income}
             currency={currency}
+            note={allTime ? (since ?? '') : undefined}
           />
         </div>
+        {!allTime && (
+          <AllTimeCard
+            transactions={transactions}
+            accountFilter={accountFilter}
+            currency={currency}
+            timeZone={settings.timeZone}
+          />
+        )}
 
         <Card>
           <SegmentedControl
@@ -207,32 +226,110 @@ function CompareCard({
   prev,
   currency,
   higherIsBad = false,
+  note,
 }: {
   label: string;
   value: number;
   prev: number;
   currency: string;
   higherIsBad?: boolean;
+  /** Подпись вместо сравнения с прошлым периодом (для «всего времени»). */
+  note?: string;
 }) {
   const t = useT();
   const pct = changePercent(value, prev);
+  // Длинная сумма за всё время иначе переносится посреди кода валюты.
+  const text = formatMoney(value, currency);
   const up = pct !== null && pct > 0;
   const bad = pct !== null && pct !== 0 && up === higherIsBad;
   const Arrow = up ? TrendingUp : TrendingDown;
   return (
     <Card className="p-3">
       <div className="text-sm text-muted">{label}</div>
-      <div className="tabular text-base font-bold break-words">{formatMoney(value, currency)}</div>
       <div
-        className={`flex items-center gap-1 text-xs ${pct === null || pct === 0 ? 'text-muted' : bad ? 'text-expense' : 'text-income'}`}
+        className={`tabular font-bold break-words ${text.length > 14 ? 'text-sm' : 'text-base'}`}
       >
-        {pct !== null && pct !== 0 && <Arrow size={14} aria-hidden="true" />}
-        {pct === null
-          ? t('stats.noPrevData')
-          : t('stats.vsPrev', {
-              pct: `${pct > 0 ? '+' : ''}${String(pct).replace('.', numberSeparators().decimal)}`,
-            })}
+        {text}
       </div>
+      {note !== undefined ? (
+        <div className="text-xs text-muted">{note}</div>
+      ) : (
+        <div
+          className={`flex items-center gap-1 text-xs ${pct === null || pct === 0 ? 'text-muted' : bad ? 'text-expense' : 'text-income'}`}
+        >
+          {pct !== null && pct !== 0 && <Arrow size={14} aria-hidden="true" />}
+          {pct === null
+            ? t('stats.noPrevData')
+            : t('stats.vsPrev', {
+                pct: `${pct > 0 ? '+' : ''}${String(pct).replace('.', numberSeparators().decimal)}`,
+              })}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+/**
+ * Итоги за всё время с учётом фильтра по счёту. Валюты не смешиваются:
+ * по строке на каждую валюту, основная — первой.
+ */
+function AllTimeCard({
+  transactions,
+  accountFilter,
+  currency,
+  timeZone,
+}: {
+  transactions: Transaction[];
+  accountFilter: Id | 'all';
+  currency: string;
+  timeZone: string;
+}) {
+  const t = useT();
+  const setPeriod = useUi((s) => s.setPeriod);
+  const visible = useMemo(
+    () => filterTransactions(transactions, -Infinity, Infinity, accountFilter),
+    [transactions, accountFilter],
+  );
+  const groups = useMemo(() => summarizeByCurrency(visible, currency), [visible, currency]);
+  if (groups.length === 0) return null;
+  const first = Math.min(...visible.map((x) => x.date));
+  return (
+    <Card className="flex flex-col gap-2 p-3">
+      <h2 className="flex flex-wrap items-baseline gap-x-2 font-semibold">
+        {t('stats.allTime')}
+        <span className="text-sm font-normal text-muted">
+          {t('stats.since', { date: formatDate(first, timeZone, 'dayShortYear') })}
+        </span>
+      </h2>
+      {groups.map(({ currency: cur, summary }) => (
+        <dl
+          key={cur}
+          aria-label={cur}
+          className="tabular grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-sm"
+        >
+          <dt className="text-muted">{t('common.expenses')}</dt>
+          <dd className="text-right font-semibold break-words text-expense">
+            {formatMoney(summary.expense, cur)}
+          </dd>
+          <dt className="text-muted">{t('common.incomes')}</dt>
+          <dd className="text-right font-semibold break-words text-income">
+            {formatMoney(summary.income, cur)}
+          </dd>
+          <dt className="text-muted">{t('stats.net')}</dt>
+          <dd
+            className={`text-right font-semibold break-words ${summary.balance < 0 ? 'text-expense' : ''}`}
+          >
+            {formatMoney(summary.balance, cur, { sign: true })}
+          </dd>
+        </dl>
+      ))}
+      <button
+        type="button"
+        onClick={() => setPeriod({ kind: 'all', anchor: Date.now() })}
+        className="flex min-h-11 items-center self-start text-sm font-medium text-accent"
+      >
+        {t('stats.showAllTime')}
+      </button>
     </Card>
   );
 }

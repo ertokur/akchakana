@@ -13,7 +13,7 @@ import { formatInTimeZone, fromZonedTime, toZonedTime } from 'date-fns-tz';
 import { dateLocale, getLang, t } from '../i18n';
 import type { Timestamp } from './types';
 
-export type PeriodKind = 'day' | 'week' | 'month' | 'year' | 'custom';
+export type PeriodKind = 'day' | 'week' | 'month' | 'year' | 'custom' | 'all';
 
 export interface Period {
   kind: PeriodKind;
@@ -54,7 +54,7 @@ export function startOfDayKey(key: string, timeZone: string): Timestamp {
  * границы вычисляются по календарю, затем полночь границы переводится обратно в UTC.
  */
 export function periodFor(
-  kind: Exclude<PeriodKind, 'custom'>,
+  kind: Exclude<PeriodKind, 'custom' | 'all'>,
   at: Timestamp,
   opts: PeriodOptions,
 ): Period {
@@ -96,8 +96,34 @@ export function customPeriod(from: string, to: string, opts: PeriodOptions): Per
   };
 }
 
-/** Сдвигает период на delta шагов. Произвольный сдвигается на свою длину в днях. */
+/**
+ * «Всё время»: с начала месяца самой ранней операции до конца месяца самой поздней
+ * (или текущего, если все операции в прошлом). Без операций — текущий месяц.
+ */
+export function allTimePeriod(
+  dates: Iterable<Timestamp>,
+  now: Timestamp,
+  opts: PeriodOptions,
+): Period {
+  let first = now;
+  let last = now;
+  for (const d of dates) {
+    if (d < first) first = d;
+    if (d > last) last = d;
+  }
+  return {
+    kind: 'all',
+    start: periodFor('month', first, opts).start,
+    end: periodFor('month', last, opts).end,
+  };
+}
+
+/**
+ * Сдвигает период на delta шагов. Произвольный сдвигается на свою длину в днях,
+ * «всё время» не сдвигается.
+ */
 export function shiftPeriod(period: Period, delta: number, opts: PeriodOptions): Period {
+  if (period.kind === 'all') return period;
   const startKey = dayKey(period.start, opts.timeZone);
   if (period.kind === 'custom') {
     const lastKey = dayKey(period.end - 1, opts.timeZone);
@@ -208,6 +234,8 @@ export function periodLabel(period: Period, timeZone: string): string {
       return f(period.start, 'monthYear');
     case 'year':
       return year(period.start);
+    case 'all':
+      return t('period.all');
     default:
       if (year(period.start) === year(last)) {
         return `${f(period.start, 'dayShort')} – ${f(last, 'dayShortYear')}`;

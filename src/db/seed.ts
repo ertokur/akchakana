@@ -25,50 +25,25 @@ type SeedCategory = [name: string, icon: string, color: string];
 /** Названия стандартных категорий на каждом языке (иконки и цвета общие). */
 const NAMES: Record<Lang, { expense: string[]; income: string[] }> = {
   ru: {
-    expense: [
-      'Продукты',
-      'Кафе и рестораны',
-      'Транспорт',
-      'Жильё и ЖКХ',
-      'Здоровье',
-      'Развлечения',
-      'Одежда',
-      'Прочее',
-    ],
-    income: ['Зарплата', 'Подарки', 'Прочее'],
+    expense: ['Продукты', 'Кафе и рестораны', 'Транспорт', 'Жильё и ЖКХ', 'Прочее'],
+    income: ['Зарплата'],
   },
   en: {
-    expense: [
-      'Groceries',
-      'Cafes & restaurants',
-      'Transport',
-      'Housing & utilities',
-      'Health',
-      'Entertainment',
-      'Clothing',
-      'Other',
-    ],
-    income: ['Salary', 'Gifts', 'Other'],
+    expense: ['Groceries', 'Cafes & restaurants', 'Transport', 'Housing & utilities', 'Other'],
+    income: ['Salary'],
   },
 };
 
-// Небольшой стартовый набор: 8 категорий расходов как раз помещаются вокруг круга.
+// Минимальный стартовый набор: самые общие категории, остальное пользователь добавит сам.
 const EXPENSE_STYLE: [icon: string, color: string][] = [
   ['cart', '#047857'],
   ['utensils', '#c2410c'],
   ['bus', '#1d4ed8'],
   ['home', '#a16207'],
-  ['heart-pulse', '#b91c1c'],
-  ['gamepad', '#7e22ce'],
-  ['shirt', '#be185d'],
   ['dots', '#57534e'],
 ];
 
-const INCOME_STYLE: [icon: string, color: string][] = [
-  ['briefcase', '#047857'],
-  ['gift', '#a21caf'],
-  ['dots', '#57534e'],
-];
+const INCOME_STYLE: [icon: string, color: string][] = [['briefcase', '#047857']];
 
 const seedList = (names: string[], styles: [string, string][]): SeedCategory[] =>
   styles.map(([icon, color], i) => [names[i], icon, color]);

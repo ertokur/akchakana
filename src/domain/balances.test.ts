@@ -1,4 +1,4 @@
-import { computeBalances, summarize, totalsByCurrency } from './balances';
+import { computeBalances, summarize, summarizeByCurrency, totalsByCurrency } from './balances';
 import { makeAccount } from '../db/seed';
 import type { Transaction } from './types';
 
@@ -50,5 +50,23 @@ describe('балансы', () => {
       expense: 7675 - 2500,
       balance: 5000000 - 5175,
     });
+  });
+});
+
+describe('итоги по валютам', () => {
+  it('отдельно по каждой валюте, основная первой, переводы не считаются', () => {
+    const result = summarizeByCurrency(
+      [
+        tx({ type: 'expense', amount: 500, currency: 'USD' }),
+        tx({ type: 'income', amount: 10000, currency: 'KGS' }),
+        tx({ type: 'expense', amount: 3000, currency: 'KGS' }),
+        tx({ type: 'transfer', amount: 999, currency: 'EUR' }),
+        tx({ type: 'income', amount: 200, currency: 'AED' }),
+      ],
+      'KGS',
+    );
+    expect(result.map((r) => r.currency)).toEqual(['KGS', 'AED', 'USD']);
+    expect(result[0].summary).toEqual({ income: 10000, expense: 3000, balance: 7000 });
+    expect(result[2].summary.balance).toBe(-500);
   });
 });
