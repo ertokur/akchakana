@@ -1,8 +1,12 @@
 import { useEffect } from 'react';
 import { useUi } from '../../stores/uiStore';
+import { runSnapshotIfDue } from '../backup/backup';
 import { runScheduler } from './scheduler';
 
-/** Запускает обработку повторов при старте, при возврате в приложение и раз в минуту. */
+/**
+ * Запускает обработку повторов и внутреннюю резервную копию по расписанию:
+ * при старте, при возврате в приложение и раз в минуту.
+ */
 export function useScheduler(enabled: boolean): void {
   useEffect(() => {
     if (!enabled) return;
@@ -14,6 +18,11 @@ export function useScheduler(enabled: boolean): void {
         const created = await runScheduler();
         if (created > 0) {
           useUi.getState().toast({ text: `Добавлено регулярных операций: ${created}` });
+        }
+        try {
+          await runSnapshotIfDue();
+        } catch {
+          // Нет места или база недоступна — попробуем при следующем запуске.
         }
       } finally {
         running = false;

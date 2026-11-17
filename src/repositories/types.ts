@@ -1,5 +1,6 @@
 import type {
   Account,
+  BackupSnapshot,
   Budget,
   Category,
   Debt,
@@ -35,6 +36,13 @@ export interface SettingsRepository {
   update(patch: Partial<Omit<Settings, 'id'>>): Promise<Settings>;
 }
 
+export interface BackupRepository {
+  /** Все внутренние копии, новые первыми. */
+  list(): Promise<BackupSnapshot[]>;
+  put(item: BackupSnapshot): Promise<void>;
+  bulkDelete(ids: Id[]): Promise<void>;
+}
+
 export interface Repositories {
   accounts: Repository<Account>;
   categories: Repository<Category>;
@@ -43,6 +51,7 @@ export interface Repositories {
   recurring: Repository<RecurringRule>;
   debts: Repository<Debt>;
   settings: SettingsRepository;
+  backups: BackupRepository;
   /** Выполнить несколько операций атомарно (импорт, сброс). */
   atomically<R>(fn: () => Promise<R>): Promise<R>;
   /** Полная очистка всех данных. */

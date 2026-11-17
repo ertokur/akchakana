@@ -62,6 +62,13 @@ export function createDexieRepositories(db: AppDb): Repositories {
     recurring: tableRepository(db.recurring),
     debts: tableRepository(db.debts),
     settings: settingsRepository(db),
+    backups: {
+      list: () => db.backups.orderBy('createdAt').reverse().toArray(),
+      put: async (item) => {
+        await db.backups.put(item);
+      },
+      bulkDelete: (ids) => db.backups.bulkDelete(ids),
+    },
     atomically: (fn) => db.transaction('rw', [...DB_TABLES], fn),
     clearAll: () =>
       db.transaction('rw', [...DB_TABLES], async () => {

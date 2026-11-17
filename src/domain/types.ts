@@ -119,6 +119,15 @@ export interface Debt extends Entity {
 
 export type ThemeSetting = 'light' | 'dark' | 'system';
 
+export type BackupFrequency = 'daily' | 'weekly' | 'monthly';
+
+/**
+ * Как сохранять файл копии, когда подошёл срок (по нажатию на баннер):
+ * share — системное меню «Поделиться»: Google Диск, «Файлы», мессенджер и т. п.;
+ * download — скачать; где браузер умеет, он спросит, куда сохранить файл.
+ */
+export type BackupTarget = 'share' | 'download';
+
 export interface Settings {
   id: 'settings';
   defaultCurrency: CurrencyCode;
@@ -133,6 +142,17 @@ export interface Settings {
   exportSnoozedUntil?: Timestamp;
   onboarded: boolean;
   notificationsEnabled: boolean;
+  autoBackupEnabled: boolean;
+  autoBackupFrequency: BackupFrequency;
+  autoBackupTarget: BackupTarget;
+  /** Сколько внутренних копий хранить. */
+  autoBackupKeep: number;
+  /** Когда файл копии последний раз сохранён в память устройства. */
+  lastAutoBackupAt?: Timestamp;
+  /** Когда сделана последняя внутренняя копия (в хранилище браузера). */
+  lastSnapshotAt?: Timestamp;
+  /** Показ баннера о копии отложен до этого момента. */
+  autoBackupSnoozedUntil?: Timestamp;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -143,4 +163,19 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
   onboarded: false,
   notificationsEnabled: false,
+  autoBackupEnabled: true,
+  autoBackupFrequency: 'weekly',
+  autoBackupTarget: 'share',
+  autoBackupKeep: 5,
 };
+
+/** Внутренняя резервная копия: тот же CSV, что и при экспорте, хранится в IndexedDB. */
+export interface BackupSnapshot {
+  id: Id;
+  createdAt: Timestamp;
+  fileName: string;
+  content: string;
+  /** Размер в байтах. */
+  size: number;
+  transactions: number;
+}
