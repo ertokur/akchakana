@@ -61,7 +61,7 @@ describe('экран импорта', () => {
 
     await user.click(screen.getByRole('button', { name: 'Импортировать' }));
     await waitFor(() => expect(useData.getState().transactions).toHaveLength(2));
-    expect((await repos.settings.get()).onboarded).toBe(true);
+    await waitFor(async () => expect((await repos.settings.get()).onboarded).toBe(true));
     expect(await screen.findByRole('heading', { name: 'Категории' })).toBeInTheDocument();
   });
 

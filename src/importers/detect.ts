@@ -1,5 +1,6 @@
 import { decodeText, type TextEncodingName } from './encoding';
 import { isOwnCsv } from './ownCsv';
+import { t as tr } from '../i18n';
 
 const SQLITE_MAGIC = 'SQLite format 3\0';
 
@@ -19,11 +20,11 @@ export type DetectedFile =
   | { kind: 'unknown'; reason: string };
 
 export function detectFile(bytes: Uint8Array): DetectedFile {
-  if (bytes.length === 0) return { kind: 'unknown', reason: 'Файл пустой' };
+  if (bytes.length === 0) return { kind: 'unknown', reason: tr('import.err.emptyFile') };
   if (isSqlite(bytes)) return { kind: 'sqlite', bytes };
   // Нулевые байты в начале — двоичный файл, а не CSV.
   if (bytes.subarray(0, 1024).includes(0)) {
-    return { kind: 'unknown', reason: 'Файл не похож ни на резервную копию 1Money, ни на CSV' };
+    return { kind: 'unknown', reason: tr('import.err.unknownFormat') };
   }
   const { text, encoding } = decodeText(bytes);
   return isOwnCsv(text) ? { kind: 'own', text, encoding } : { kind: 'csv', text, encoding };

@@ -1,22 +1,27 @@
 import { useState } from 'react';
 import { FileUp, Wallet } from 'lucide-react';
-import { ACCOUNT_KIND_LABELS, defaultCategories, makeAccount, PALETTE } from '../../db/seed';
+import { ACCOUNT_KINDS, defaultCategories, makeAccount, PALETTE } from '../../db/seed';
 import { COMMON_CURRENCIES, fractionDigits, tryParseMinor } from '../../domain/money';
 import type { AccountKind } from '../../domain/types';
 import { useData } from '../../stores/dataStore';
 import { Button, Field, Select, TextInput } from '../../ui/controls';
 import { navigate } from '../../app/router';
 import { MadeWith } from '../../ui/MadeWith';
+import { useT } from '../../i18n';
+import { LanguageField } from '../settings/LanguageField';
 
 /** Первый запуск: валюта и первый счёт, либо импорт резервной копии 1Money. */
 export function OnboardingScreen() {
+  const t = useT();
   const settings = useData((s) => s.settings);
   const updateSettings = useData((s) => s.updateSettings);
   const saveAccount = useData((s) => s.saveAccount);
   const saveCategories = useData((s) => s.saveCategories);
   const hasCategories = useData((s) => s.categories.length > 0);
   const [currency, setCurrency] = useState(settings.defaultCurrency);
-  const [name, setName] = useState('Наличные');
+  // Пока пользователь не ввёл своё название, предлагаем стандартное на текущем языке.
+  const [customName, setName] = useState<string | null>(null);
+  const name = customName ?? t('onboarding.defaultAccountName');
   const [kind, setKind] = useState<AccountKind>('cash');
   const [balance, setBalance] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -24,8 +29,8 @@ export function OnboardingScreen() {
   const finish = async () => {
     const initialBalance =
       balance.trim() === '' ? 0 : tryParseMinor(balance, fractionDigits(currency));
-    if (initialBalance === null) return setError('Неверный начальный баланс');
-    if (!name.trim()) return setError('Введите название счёта');
+    if (initialBalance === null) return setError(t('account.invalidInitial'));
+    if (!name.trim()) return setError(t('onboarding.enterAccountName'));
     if (!hasCategories) await saveCategories(defaultCategories());
     await saveAccount(
       makeAccount({ name: name.trim(), currency, kind, initialBalance, color: PALETTE[0] }),
@@ -49,21 +54,23 @@ export function OnboardingScreen() {
           height={72}
           className="rounded-2xl"
         />
-        <h1 className="text-2xl font-bold">Акчакана</h1>
-        <p className="max-w-xs text-muted">
-          Личный учёт денег. Все данные хранятся только на этом устройстве и работают без интернета.
-        </p>
+        <h1 className="text-2xl font-bold">{t('app.name')}</h1>
+        <p className="max-w-xs text-muted">{t('onboarding.tagline')}</p>
         <MadeWith className="pt-1" />
       </div>
+
+      <section className="rounded-2xl bg-surface p-4">
+        <LanguageField />
+      </section>
 
       <section
         aria-labelledby="first-account"
         className="flex flex-col gap-4 rounded-2xl bg-surface p-4"
       >
         <h2 id="first-account" className="flex items-center gap-2 text-lg font-semibold">
-          <Wallet size={20} aria-hidden="true" /> Первый счёт
+          <Wallet size={20} aria-hidden="true" /> {t('onboarding.firstAccount')}
         </h2>
-        <Field label="Основная валюта">
+        <Field label={t('onboarding.mainCurrency')}>
           {(id) => (
             <Select id={id} value={currency} onChange={(e) => setCurrency(e.target.value)}>
               {COMMON_CURRENCIES.map((c) => (
@@ -74,21 +81,21 @@ export function OnboardingScreen() {
             </Select>
           )}
         </Field>
-        <Field label="Название счёта">
+        <Field label={t('onboarding.accountName')}>
           {(id) => <TextInput id={id} value={name} onChange={(e) => setName(e.target.value)} />}
         </Field>
-        <Field label="Тип">
+        <Field label={t('account.kind')}>
           {(id) => (
             <Select id={id} value={kind} onChange={(e) => setKind(e.target.value as AccountKind)}>
-              {Object.entries(ACCOUNT_KIND_LABELS).map(([k, label]) => (
+              {ACCOUNT_KINDS.map((k) => (
                 <option key={k} value={k}>
-                  {label}
+                  {t(`account.kind.${k}`)}
                 </option>
               ))}
             </Select>
           )}
         </Field>
-        <Field label="Текущий баланс" error={error ?? undefined}>
+        <Field label={t('onboarding.currentBalance')} error={error ?? undefined}>
           {(id) => (
             <TextInput
               id={id}
@@ -103,20 +110,17 @@ export function OnboardingScreen() {
           )}
         </Field>
         <Button block onClick={finish}>
-          Начать
+          {t('onboarding.start')}
         </Button>
       </section>
 
       <section className="flex flex-col gap-2 rounded-2xl border border-dashed border-border p-4">
         <h2 className="flex items-center gap-2 font-semibold">
-          <FileUp size={20} aria-hidden="true" /> Уже вели учёт в 1Money?
+          <FileUp size={20} aria-hidden="true" /> {t('onboarding.from1Money')}
         </h2>
-        <p className="text-sm text-muted">
-          Импортируйте резервную копию: счета, категории и операции перенесутся. Файл только
-          читается и никуда не отправляется.
-        </p>
+        <p className="text-sm text-muted">{t('onboarding.from1MoneyText')}</p>
         <Button variant="secondary" onClick={importInstead}>
-          Импортировать резервную копию
+          {t('onboarding.importBackup')}
         </Button>
       </section>
     </div>

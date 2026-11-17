@@ -7,6 +7,7 @@ import { useUi } from '../../stores/uiStore';
 import { BottomSheet } from '../../ui/BottomSheet';
 import { IconBadge } from '../../ui/Icon';
 import { useBalances } from './hooks';
+import { useT } from '../../i18n';
 
 /** Верх экрана как в 1Money: выбранный счёт (или «Все счета») и его баланс; нажатие — выбор счёта. */
 export function AccountSelector() {
@@ -16,6 +17,7 @@ export function AccountSelector() {
   const setAccountFilter = useUi((s) => s.setAccountFilter);
   const balances = useBalances();
   const [open, setOpen] = useState(false);
+  const t = useT();
   const active = useMemo(() => accounts.filter((a) => !a.archived).sort(byOrder), [accounts]);
   const totals = useMemo(() => totalsByCurrency(accounts, balances), [accounts, balances]);
   const current = accounts.find((a) => a.id === accountFilter);
@@ -32,14 +34,17 @@ export function AccountSelector() {
         type="button"
         onClick={() => setOpen(true)}
         className="flex min-h-12 w-full flex-col items-center justify-center rounded-xl px-2"
-        aria-label={`Счёт: ${current?.name ?? 'Все счета'}, баланс ${totalText}. Выбрать счёт`}
+        aria-label={t('accountSelector.aria', {
+          name: current?.name ?? t('common.allAccounts'),
+          balance: totalText,
+        })}
       >
         <span className="flex items-center gap-1 text-sm text-muted">
-          {current?.name ?? 'Все счета'} <ChevronDown size={16} aria-hidden="true" />
+          {current?.name ?? t('common.allAccounts')} <ChevronDown size={16} aria-hidden="true" />
         </span>
         <span className="tabular text-lg font-bold">{totalText}</span>
       </button>
-      <BottomSheet open={open} onClose={() => setOpen(false)} title="Счёт">
+      <BottomSheet open={open} onClose={() => setOpen(false)} title={t('common.account')}>
         <ul className="flex flex-col gap-1">
           <li>
             <button
@@ -54,7 +59,7 @@ export function AccountSelector() {
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-accent-fg">
                 <Wallet size={18} aria-hidden="true" />
               </span>
-              <span className="flex-1 font-medium">Все счета</span>
+              <span className="flex-1 font-medium">{t('common.allAccounts')}</span>
             </button>
           </li>
           {active.map((a) => (

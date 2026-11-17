@@ -15,8 +15,10 @@ import { AccountSelector } from '../shared/AccountSelector';
 import { TransactionRow } from './TransactionRow';
 import { ExportReminder } from '../importExport/ExportReminder';
 import { RecurringDue } from '../recurring/RecurringDue';
+import { useT } from '../../i18n';
 
 export function TransactionsScreen() {
+  const tr = useT();
   const transactions = useData((s) => s.transactions);
   const accounts = useData((s) => s.accounts);
   const settings = useData((s) => s.settings);
@@ -52,18 +54,18 @@ export function TransactionsScreen() {
     async (t: Transaction) => {
       await deleteTransaction(t.id);
       toast({
-        text: 'Операция удалена',
-        action: { label: 'Отменить', run: () => void saveTransaction(t) },
+        text: tr('editor.deleted'),
+        action: { label: tr('common.undo'), run: () => void saveTransaction(t) },
       });
     },
-    [deleteTransaction, saveTransaction, toast],
+    [deleteTransaction, saveTransaction, toast, tr],
   );
 
   const now = useNow();
 
   return (
     <Screen
-      title="Операции"
+      title={tr('nav.transactions')}
       header={
         <div className="flex flex-col">
           <AccountSelector />
@@ -73,9 +75,9 @@ export function TransactionsScreen() {
     >
       <ExportReminder />
       <RecurringDue />
-      <section aria-label="Итоги периода" className="mb-4 rounded-2xl bg-surface p-3">
+      <section aria-label={tr('transactions.summary')} className="mb-4 rounded-2xl bg-surface p-3">
         <div className="flex items-baseline justify-between gap-2">
-          <span className="text-sm text-muted">Баланс за период</span>
+          <span className="text-sm text-muted">{tr('transactions.balance')}</span>
           <span
             className={`tabular text-xl font-bold ${summary.balance < 0 ? 'text-expense' : ''}`}
           >
@@ -84,12 +86,12 @@ export function TransactionsScreen() {
         </div>
         <div className="mt-2 grid grid-cols-2 gap-2">
           <SummaryCell
-            label="Доходы"
+            label={tr('common.incomes')}
             value={formatMoney(summary.income, filterCurrency)}
             tone="income"
           />
           <SummaryCell
-            label="Расходы"
+            label={tr('common.expenses')}
             value={formatMoney(summary.expense, filterCurrency)}
             tone="expense"
           />
@@ -97,21 +99,21 @@ export function TransactionsScreen() {
       </section>
       {otherCurrencies.length > 0 && (
         <p className="-mt-2 mb-3 text-sm text-muted">
-          Итоги в {filterCurrency}. Есть операции в других валютах: {otherCurrencies.join(', ')}.
+          {tr('transactions.otherCurrencies', {
+            currency: filterCurrency,
+            list: otherCurrencies.join(', '),
+          })}
         </p>
       )}
 
       {accounts.length === 0 ? (
-        <EmptyState
-          title="Нет счетов"
-          text="Создайте счёт на вкладке «Счета», чтобы добавлять операции."
-        />
+        <EmptyState title={tr('home.noAccounts')} text={tr('transactions.noAccountsText')} />
       ) : groups.length === 0 ? (
         <EmptyState
           icon={<ReceiptText size={40} />}
-          title="Нет операций за период"
-          text="Добавьте первую операцию кнопкой «+»."
-          action={<Button onClick={() => openNew('expense')}>Добавить операцию</Button>}
+          title={tr('transactions.empty')}
+          text={tr('transactions.emptyText')}
+          action={<Button onClick={() => openNew('expense')}>{tr('transactions.add')}</Button>}
         />
       ) : (
         <div className="flex flex-col gap-4">
@@ -140,7 +142,7 @@ export function TransactionsScreen() {
               </ul>
             </section>
           ))}
-          <p className="text-center text-sm text-muted">Свайп влево по операции — удалить</p>
+          <p className="text-center text-sm text-muted">{tr('transactions.swipeHint')}</p>
         </div>
       )}
 
@@ -148,7 +150,7 @@ export function TransactionsScreen() {
         <button
           type="button"
           onClick={() => openNew('expense')}
-          aria-label="Добавить операцию"
+          aria-label={tr('transactions.add')}
           className="fixed right-[max(1rem,env(safe-area-inset-right))] bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-30 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-accent-fg shadow-lg active:scale-95"
         >
           <Plus size={28} />

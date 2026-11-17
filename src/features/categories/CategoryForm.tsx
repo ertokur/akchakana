@@ -11,6 +11,7 @@ import { Button, Field, Select, TextInput, Toggle } from '../../ui/controls';
 import { DEFAULT_ICON } from '../../ui/Icon';
 import { ColorPicker, IconPicker } from '../../ui/pickers';
 import { SubcategoryEditor } from './SubcategoryEditor';
+import { useT } from '../../i18n';
 
 export function CategoryForm({
   category,
@@ -23,6 +24,7 @@ export function CategoryForm({
   onClose: () => void;
   siblingsCount: number;
 }) {
+  const t = useT();
   const categories = useData((s) => s.categories);
   const saveCategory = useData((s) => s.saveCategory);
   const saveCategories = useData((s) => s.saveCategories);
@@ -44,7 +46,7 @@ export function CategoryForm({
     .sort(byOrder);
 
   const save = async () => {
-    if (!name.trim()) return setError('Введите название');
+    if (!name.trim()) return setError(t('form.enterName'));
     const now = Date.now();
     const parent = parentId || undefined;
     const parentChanged = (category?.parentId ?? undefined) !== parent;
@@ -71,23 +73,27 @@ export function CategoryForm({
           .map((c) => ({ ...c, archived, updatedAt: now })),
       );
     }
-    toast({ text: category ? 'Категория сохранена' : 'Категория добавлена' });
+    toast({ text: category ? t('category.saved') : t('category.added') });
     onClose();
   };
 
   const remove = async () => {
     if (!category) return;
     setConfirm(false);
-    if (hasChildren) return setError('Сначала удалите или перенесите подкатегории.');
+    if (hasChildren) return setError(t('category.hasChildren'));
     const refs = await getRepositories().transactions.countReferences(category.id);
     const budgetRefs = useData.getState().budgets.some((b) => b.categoryId === category.id);
     if (refs > 0 || budgetRefs) {
-      return setError(
-        `Категория используется${refs ? ` в ${refs} операциях` : ''}${budgetRefs ? ' в бюджете' : ''}. Скройте её вместо удаления.`,
-      );
+      const where = [
+        refs ? t('category.inTransactions', { count: refs }) : '',
+        budgetRefs ? t('category.inBudget') : '',
+      ]
+        .filter(Boolean)
+        .join(t('category.whereJoin'));
+      return setError(t('category.inUse', { where }));
     }
     await deleteCategory(category.id);
-    toast({ text: 'Категория удалена' });
+    toast({ text: t('category.deleted') });
     onClose();
   };
 
@@ -98,26 +104,26 @@ export function CategoryForm({
       onClose={onClose}
       title={
         category
-          ? 'Категория'
+          ? t('common.category')
           : kind === 'expense'
-            ? 'Новая категория расходов'
-            : 'Новая категория доходов'
+            ? t('home.newExpenseCategory')
+            : t('home.newIncomeCategory')
       }
       footer={
         <div className="flex gap-2">
           {category && (
             <Button variant="danger" onClick={() => setConfirm(true)}>
-              Удалить
+              {t('common.delete')}
             </Button>
           )}
           <Button block onClick={save}>
-            Сохранить
+            {t('common.save')}
           </Button>
         </div>
       }
     >
       <div className="flex flex-col gap-4">
-        <Field label="Название">
+        <Field label={t('common.name')}>
           {(id) => (
             <TextInput
               id={id}
@@ -129,12 +135,8 @@ export function CategoryForm({
         </Field>
         {category && !category.parentId && <SubcategoryEditor parent={category} />}
         <Field
-          label="Родительская категория"
-          hint={
-            hasChildren
-              ? 'У категории есть подкатегории, поэтому она остаётся верхнего уровня'
-              : undefined
-          }
+          label={t('category.parent')}
+          hint={hasChildren ? t('category.parentLocked') : undefined}
         >
           {(id) => (
             <Select
@@ -143,7 +145,7 @@ export function CategoryForm({
               disabled={hasChildren}
               onChange={(e) => setParentId(e.target.value)}
             >
-              <option value="">— Нет (верхний уровень) —</option>
+              <option value="">{t('category.noParent')}</option>
               {parentOptions.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -153,19 +155,19 @@ export function CategoryForm({
           )}
         </Field>
         <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-muted">Цвет</span>
+          <span className="text-sm font-medium text-muted">{t('common.color')}</span>
           <ColorPicker value={color} onChange={setColor} />
         </div>
         <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-muted">Иконка</span>
+          <span className="text-sm font-medium text-muted">{t('common.icon')}</span>
           <IconPicker value={icon} color={color} onChange={setIcon} />
         </div>
         {category && (
           <Toggle
             checked={archived}
             onChange={setArchived}
-            label="Скрыть категорию"
-            description="Скрытая категория остаётся в старых операциях, но не предлагается в новых"
+            label={t('category.hide')}
+            description={t('category.hideHint')}
           />
         )}
         {error && (
@@ -176,8 +178,8 @@ export function CategoryForm({
       </div>
       <ConfirmDialog
         open={confirm}
-        title="Удалить категорию?"
-        text="Удалить можно только неиспользуемую категорию."
+        title={t('category.deleteConfirm')}
+        text={t('category.deleteHint')}
         onCancel={() => setConfirm(false)}
         onConfirm={remove}
       />

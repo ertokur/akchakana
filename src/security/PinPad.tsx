@@ -1,4 +1,5 @@
 import { Delete } from 'lucide-react';
+import { useT } from '../i18n';
 
 /** Экранная цифровая клавиатура для PIN-кода. */
 export function PinPad({
@@ -6,7 +7,7 @@ export function PinPad({
   onChange,
   onSubmit,
   maxLength = 6,
-  submitLabel = 'Готово',
+  submitLabel,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -14,10 +15,15 @@ export function PinPad({
   maxLength?: number;
   submitLabel?: string;
 }) {
+  const t = useT();
   const press = (d: string) => value.length < maxLength && onChange(value + d);
   return (
     <div className="flex flex-col items-center gap-6">
-      <div className="flex gap-3" aria-label={`Введено цифр: ${value.length}`} role="status">
+      <div
+        className="flex gap-3"
+        aria-label={t('pin.entered', { count: value.length })}
+        role="status"
+      >
         {Array.from({ length: Math.max(4, value.length) }, (_, i) => (
           <span
             key={i}
@@ -38,7 +44,7 @@ export function PinPad({
         ))}
         <button
           type="button"
-          aria-label="Стереть"
+          aria-label={t('common.backspace')}
           onClick={() => onChange(value.slice(0, -1))}
           className="flex min-h-16 items-center justify-center rounded-2xl text-muted"
         >
@@ -57,7 +63,7 @@ export function PinPad({
           disabled={value.length < 4}
           className="min-h-16 rounded-2xl bg-accent font-semibold text-accent-fg disabled:opacity-40"
         >
-          {submitLabel}
+          {submitLabel ?? t('common.done')}
         </button>
       </div>
     </div>

@@ -12,6 +12,7 @@ import type {
 } from '../domain/types';
 import { guessAccountKind, guessCategoryIcon } from './guess';
 import { emptyPlan, type ImportPlan } from './types';
+import { t as tr } from '../i18n';
 
 /**
  * Адаптер резервной копии 1Money (SQLite). Файл открывается в памяти через sql.js,
@@ -61,7 +62,7 @@ const SERVICE_ROW_TYPE = 4;
 type Row = Record<string, SqlValue>;
 
 function select(db: Database, sql: string): Row[] {
-  if (!/^\s*(SELECT|PRAGMA)\b/i.test(sql)) throw new Error('Разрешены только запросы на чтение');
+  if (!/^\s*(SELECT|PRAGMA)\b/i.test(sql)) throw new Error(tr('import.err.readOnly'));
   const result = db.exec(sql);
   if (result.length === 0) return [];
   const { columns, values } = result[0];
@@ -121,7 +122,7 @@ function readBackup(db: Database, currency: CurrencyCode, now: number): ImportPl
   for (const table of ['tr', 'de']) {
     if (!hasTable(db, table)) {
       plan.errors.push({
-        message: `В файле нет таблицы «${table}» — это не резервная копия 1Money`,
+        message: tr('import.err.noTable', { table }),
       });
       return plan;
     }
@@ -173,20 +174,18 @@ function readBackup(db: Database, currency: CurrencyCode, now: number): ImportPl
     else if (categoryUse.has(id)) roles.set(id, categoryUse.get(id)!);
     else if (ty === 1) roles.set(id, 'expense');
     else if (ty === 0) roles.set(id, 'income');
-    else plan.warnings.push(`Пропущена запись «${str(r._na)}» неизвестного типа ${ty}`);
+    else plan.warnings.push(tr('import.warn.unknownRecord', { name: str(r._na), type: ty }));
   }
   for (const id of referenced) {
     if (!roles.has(id)) {
       // Ссылка на запись, которой нет ни в одном снимке.
       roles.set(id, accountRefs.has(id) ? 'account' : (categoryUse.get(id) ?? 'expense'));
-      plan.warnings.push(`Запись #${id} не найдена в справочнике — создана с временным названием`);
+      plan.warnings.push(tr('import.warn.missingRecord', { id }));
     }
   }
   for (const [id, kind] of categoryUse) {
     if (roles.get(id) === 'account') {
-      plan.warnings.push(
-        `«${str(latest.get(id)?._na ?? id)}» используется и как счёт, и как категория`,
-      );
+      plan.warnings.push(tr('import.warn.bothRoles', { name: str(latest.get(id)?._na ?? id) }));
     } else if (roles.get(id) !== kind) {
       roles.set(id, kind);
     }
@@ -207,15 +206,13 @@ function readBackup(db: Database, currency: CurrencyCode, now: number): ImportPl
   for (const [id, role] of roles) {
     if (role !== 'account') continue;
     const r = latest.get(id);
-    const name = (r ? str(r._na).trim() : '') || `Счёт ${id}`;
+    const name = (r ? str(r._na).trim() : '') || tr('import.placeholderAccount', { id });
     const kind = guessAccountKind(name);
     let initialBalance = 0;
     if (r && isSet(r._a_m_b)) {
       const parsed = tryParseMinor(str(r._a_m_b), digits);
       if (parsed === null) {
-        plan.warnings.push(
-          `Счёт «${name}»: не удалось прочитать начальный баланс «${str(r._a_m_b)}»`,
-        );
+        plan.warnings.push(tr('import.warn.badInitial', { name, value: str(r._a_m_b) }));
       } else initialBalance = parsed;
     }
     const iconIndex = r ? num(r._ic) : NaN;
@@ -240,12 +237,12 @@ function readBackup(db: Database, currency: CurrencyCode, now: number): ImportPl
   for (const [id, role] of roles) {
     if (role === 'account') continue;
     const r = latest.get(id);
-    const name = (r ? str(r._na).trim() : '') || `Категория ${id}`;
+    const name = (r ? str(r._na).trim() : '') || tr('import.placeholderCategory', { id });
     const parentRaw = r && isSet(r._pi) ? str(r._pi) : undefined;
     const parentRole = parentRaw ? roles.get(parentRaw) : undefined;
     const parentId = parentRaw && parentRole === role ? oneMoneyIds.entity(parentRaw) : undefined;
     if (parentRaw && !parentId) {
-      plan.warnings.push(`Подкатегория «${name}»: родитель не найден — импортирована отдельно`);
+      plan.warnings.push(tr('import.warn.orphanSub', { name }));
     }
     const iconIndex = r ? num(r._ic) : NaN;
     categories.push({
@@ -281,22 +278,24 @@ function readBackup(db: Database, currency: CurrencyCode, now: number): ImportPl
     const id = str(r._id);
     const type = TR_TYPES[num(r._ty)];
     if (!type) {
-      plan.errors.push({ message: `Операция #${id}: неизвестный тип ${str(r._ty)}` });
+      plan.errors.push({ message: tr('import.err.txUnknownType', { id, type: str(r._ty) }) });
       continue;
     }
     const amount = tryParseMinor(str(r._a_m), digits);
     if (amount === null) {
-      plan.errors.push({ message: `Операция #${id}: не удалось прочитать сумму «${str(r._a_m)}»` });
+      plan.errors.push({ message: tr('import.err.txBadAmount', { id, value: str(r._a_m) }) });
       continue;
     }
     const date = num(r._da);
     if (!Number.isFinite(date)) {
-      plan.errors.push({ message: `Операция #${id}: неверная дата «${str(r._da)}»` });
+      plan.errors.push({ message: tr('import.err.txBadDate', { id, value: str(r._da) }) });
       continue;
     }
     const accountId = oneMoneyIds.entity(r._a_i);
     if (!accountIds.has(accountId)) {
-      plan.errors.push({ message: `Операция #${id}: счёт #${str(r._a_i)} не найден` });
+      plan.errors.push({
+        message: tr('import.err.txAccountNotFound', { id, account: str(r._a_i) }),
+      });
       continue;
     }
     const t: Transaction = {
@@ -317,7 +316,7 @@ function readBackup(db: Database, currency: CurrencyCode, now: number): ImportPl
     if (type === 'transfer') {
       const toAccountId = oneMoneyIds.entity(r._d_i);
       if (!accountIds.has(toAccountId) || toAccountId === accountId) {
-        plan.errors.push({ message: `Операция #${id}: неверный счёт получателя перевода` });
+        plan.errors.push({ message: tr('import.err.txBadTarget', { id }) });
         continue;
       }
       t.toAccountId = toAccountId;

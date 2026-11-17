@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { HandCoins } from 'lucide-react';
 import { debtRemaining, debtTotals } from '../../domain/debts';
-import { dayKey, formatInTz, fromDateTimeInput } from '../../domain/dates';
+import { dayKey, formatDate, fromDateTimeInput } from '../../domain/dates';
 import { newId } from '../../domain/ids';
 import {
   COMMON_CURRENCIES,
@@ -24,10 +24,11 @@ import {
   TextInput,
   Toggle,
 } from '../../ui/controls';
+import { useT, type DictKey } from '../../i18n';
 
-const DIRECTIONS: { value: DebtDirection; label: string }[] = [
-  { value: 'owedToMe', label: 'Мне должны' },
-  { value: 'iOwe', label: 'Я должен' },
+const DIRECTIONS: { value: DebtDirection; label: DictKey }[] = [
+  { value: 'owedToMe', label: 'debt.owedToMe' },
+  { value: 'iOwe', label: 'debt.iOwe' },
 ];
 
 export function DebtsPanel({
@@ -37,6 +38,7 @@ export function DebtsPanel({
   creating: boolean;
   onCreatingChange: (v: boolean) => void;
 }) {
+  const t = useT();
   const debts = useData((s) => s.debts);
   const timeZone = useData((s) => s.settings.timeZone);
   const [editing, setEditing] = useState<Debt | null>(null);
@@ -70,9 +72,9 @@ export function DebtsPanel({
       {debts.length === 0 ? (
         <EmptyState
           icon={<HandCoins size={40} />}
-          title="Долгов нет"
-          text="Записывайте, кто и сколько вам должен и кому должны вы."
-          action={<Button onClick={() => onCreatingChange(true)}>Добавить долг</Button>}
+          title={t('debt.empty')}
+          text={t('debt.emptyText')}
+          action={<Button onClick={() => onCreatingChange(true)}>{t('debt.add')}</Button>}
         />
       ) : (
         <>
@@ -80,7 +82,7 @@ export function DebtsPanel({
           {settled.length > 0 && (
             <details>
               <summary className="min-h-11 cursor-pointer py-2 font-medium text-muted">
-                Закрытые ({settled.length})
+                {t('debt.settledList', { count: settled.length })}
               </summary>
               <DebtList debts={settled} timeZone={timeZone} onOpen={setEditing} />
             </details>
@@ -109,6 +111,7 @@ function DebtList({
   timeZone: string;
   onOpen: (d: Debt) => void;
 }) {
+  const t = useT();
   return (
     <ul className="flex flex-col gap-px overflow-hidden rounded-xl">
       {debts.map((d) => (
@@ -121,8 +124,10 @@ function DebtList({
             <span className="min-w-0 flex-1">
               <span className="block truncate font-medium">{d.person}</span>
               <span className="block truncate text-sm text-muted">
-                {d.direction === 'owedToMe' ? 'Мне должны' : 'Я должен'}
-                {d.dueDate ? ` · до ${formatInTz(d.dueDate, timeZone, 'd MMM yyyy')}` : ''}
+                {d.direction === 'owedToMe' ? t('debt.owedToMe') : t('debt.iOwe')}
+                {d.dueDate
+                  ? ` · ${t('debt.until', { date: formatDate(d.dueDate, timeZone, 'dayShortYear') })}`
+                  : ''}
                 {d.note ? ` · ${d.note}` : ''}
               </span>
             </span>
@@ -139,6 +144,7 @@ function DebtList({
 }
 
 function DebtForm({ debt, onClose }: { debt?: Debt; onClose: () => void }) {
+  const t = useT();
   const settings = useData((s) => s.settings);
   const saveDebt = useData((s) => s.saveDebt);
   const deleteDebt = useData((s) => s.deleteDebt);
@@ -158,16 +164,16 @@ function DebtForm({ debt, onClose }: { debt?: Debt; onClose: () => void }) {
 
   const addPayment = () => {
     const value = tryParseMinor(payment, digits);
-    if (value === null || value <= 0) return setError('Неверная сумма погашения');
+    if (value === null || value <= 0) return setError(t('debt.invalidPayment'));
     setPayments([...payments, { date: Date.now(), amount: value }]);
     setPayment('');
     setError(null);
   };
 
   const save = async () => {
-    if (!person.trim()) return setError('Укажите, кто должен или кому');
+    if (!person.trim()) return setError(t('debt.enterPerson'));
     const value = tryParseMinor(amount, digits);
-    if (value === null || value <= 0) return setError('Введите сумму долга');
+    if (value === null || value <= 0) return setError(t('debt.enterAmount'));
     const now = Date.now();
     const next: Debt = {
       id: debt?.id ?? newId(),
@@ -185,7 +191,7 @@ function DebtForm({ debt, onClose }: { debt?: Debt; onClose: () => void }) {
     };
     if (debtRemaining(next) === 0) next.settled = true;
     await saveDebt(next);
-    toast({ text: next.settled && !debt?.settled ? 'Долг закрыт' : 'Долг сохранён' });
+    toast({ text: next.settled && !debt?.settled ? t('debt.closed') : t('debt.saved') });
     onClose();
   };
 
@@ -194,32 +200,32 @@ function DebtForm({ debt, onClose }: { debt?: Debt; onClose: () => void }) {
       open
       tall
       onClose={onClose}
-      title={debt ? 'Долг' : 'Новый долг'}
+      title={debt ? t('debt.title') : t('debt.new')}
       footer={
         <div className="flex gap-2">
           {debt && (
             <Button variant="danger" onClick={() => setConfirm(true)}>
-              Удалить
+              {t('common.delete')}
             </Button>
           )}
           <Button block onClick={save}>
-            Сохранить
+            {t('common.save')}
           </Button>
         </div>
       }
     >
       <div className="flex flex-col gap-4">
         <SegmentedControl
-          label="Направление"
+          label={t('debt.direction')}
           value={direction}
-          options={DIRECTIONS}
+          options={DIRECTIONS.map((o) => ({ value: o.value, label: t(o.label) }))}
           onChange={setDirection}
         />
-        <Field label={direction === 'owedToMe' ? 'Кто должен' : 'Кому должен'}>
+        <Field label={direction === 'owedToMe' ? t('debt.whoOwes') : t('debt.whomIOwe')}>
           {(id) => <TextInput id={id} value={person} onChange={(e) => setPerson(e.target.value)} />}
         </Field>
         <div className="grid grid-cols-[1fr_7rem] gap-2">
-          <Field label="Сумма">
+          <Field label={t('editor.amount')}>
             {(id) => (
               <TextInput
                 id={id}
@@ -229,7 +235,7 @@ function DebtForm({ debt, onClose }: { debt?: Debt; onClose: () => void }) {
               />
             )}
           </Field>
-          <Field label="Валюта">
+          <Field label={t('common.currency')}>
             {(id) => (
               <Select id={id} value={currency} onChange={(e) => setCurrency(e.target.value)}>
                 {COMMON_CURRENCIES.map((c) => (
@@ -239,16 +245,16 @@ function DebtForm({ debt, onClose }: { debt?: Debt; onClose: () => void }) {
             )}
           </Field>
         </div>
-        <Field label="Вернуть до">
+        <Field label={t('debt.dueDate')}>
           {(id) => (
             <TextInput id={id} type="date" value={due} onChange={(e) => setDue(e.target.value)} />
           )}
         </Field>
-        <Field label="Заметка">
+        <Field label={t('common.note')}>
           {(id) => <TextInput id={id} value={note} onChange={(e) => setNote(e.target.value)} />}
         </Field>
         <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-muted">Погашения</span>
+          <span className="text-sm font-medium text-muted">{t('debt.payments')}</span>
           {payments.length > 0 && (
             <ul className="flex flex-col gap-1">
               {payments.map((p, i) => (
@@ -257,7 +263,7 @@ function DebtForm({ debt, onClose }: { debt?: Debt; onClose: () => void }) {
                   className="flex min-h-11 items-center justify-between rounded-lg bg-surface-2 px-3"
                 >
                   <span className="text-sm">
-                    {formatInTz(p.date, settings.timeZone, 'd MMM yyyy')}
+                    {formatDate(p.date, settings.timeZone, 'dayShortYear')}
                   </span>
                   <span className="tabular font-medium">{formatMoney(p.amount, currency)}</span>
                   <button
@@ -265,7 +271,7 @@ function DebtForm({ debt, onClose }: { debt?: Debt; onClose: () => void }) {
                     className="min-h-11 px-2 text-sm text-expense"
                     onClick={() => setPayments(payments.filter((_, j) => j !== i))}
                   >
-                    Убрать
+                    {t('debt.removePayment')}
                   </button>
                 </li>
               ))}
@@ -273,18 +279,18 @@ function DebtForm({ debt, onClose }: { debt?: Debt; onClose: () => void }) {
           )}
           <div className="flex gap-2">
             <TextInput
-              aria-label="Сумма погашения"
+              aria-label={t('debt.paymentAmount')}
               inputMode="decimal"
-              placeholder="Сумма погашения"
+              placeholder={t('debt.paymentAmount')}
               value={payment}
               onChange={(e) => setPayment(e.target.value)}
             />
             <Button variant="secondary" onClick={addPayment}>
-              Добавить
+              {t('common.add')}
             </Button>
           </div>
         </div>
-        <Toggle checked={settled} onChange={setSettled} label="Долг закрыт" />
+        <Toggle checked={settled} onChange={setSettled} label={t('debt.closed')} />
         {error && (
           <p role="alert" className="text-sm font-medium text-expense">
             {error}
@@ -293,7 +299,7 @@ function DebtForm({ debt, onClose }: { debt?: Debt; onClose: () => void }) {
       </div>
       <ConfirmDialog
         open={confirm}
-        title="Удалить долг?"
+        title={t('debt.deleteConfirm')}
         onCancel={() => setConfirm(false)}
         onConfirm={async () => {
           if (debt) await deleteDebt(debt.id);

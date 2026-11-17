@@ -1,5 +1,5 @@
 import { Repeat } from 'lucide-react';
-import { formatInTz } from '../../domain/dates';
+import { formatDate } from '../../domain/dates';
 import { formatMoney } from '../../domain/money';
 import type { RecurringRule } from '../../domain/types';
 import { useData } from '../../stores/dataStore';
@@ -7,9 +7,11 @@ import { useUi } from '../../stores/uiStore';
 import { Button } from '../../ui/controls';
 import { useNow } from '../shared/hooks';
 import { advanceRule, dueReminders, transactionFromRule } from './scheduler';
+import { useT } from '../../i18n';
 
 /** Карточки «пора оплатить» для правил с напоминанием. */
 export function RecurringDue() {
+  const t = useT();
   const recurring = useData((s) => s.recurring);
   const timeZone = useData((s) => s.settings.timeZone);
   const saveTransaction = useData((s) => s.saveTransaction);
@@ -22,14 +24,14 @@ export function RecurringDue() {
   const confirm = async (rule: RecurringRule) => {
     await saveTransaction(transactionFromRule(rule, rule.nextDate));
     await saveRecurring(advanceRule(rule, rule.nextDate, timeZone));
-    toast({ text: `Операция «${rule.name}» добавлена` });
+    toast({ text: t('recurring.added', { name: rule.name }) });
   };
   const skip = async (rule: RecurringRule) => {
     await saveRecurring(advanceRule(rule, rule.nextDate, timeZone));
   };
 
   return (
-    <section aria-label="Регулярные платежи к оплате" className="mb-4 flex flex-col gap-2">
+    <section aria-label={t('recurring.dueAria')} className="mb-4 flex flex-col gap-2">
       {due.map((rule) => (
         <div key={rule.id} className="rounded-2xl border border-accent bg-accent-soft p-3">
           <div className="flex items-center gap-2">
@@ -40,14 +42,14 @@ export function RecurringDue() {
             </span>
           </div>
           <p className="mt-1 text-sm text-muted">
-            Срок: {formatInTz(rule.nextDate, timeZone, 'd MMMM, HH:mm')}
+            {t('recurring.due', { date: formatDate(rule.nextDate, timeZone, 'dayMonthTime') })}
           </p>
           <div className="mt-2 flex gap-2">
             <Button className="flex-1" onClick={() => confirm(rule)}>
-              Добавить операцию
+              {t('transactions.add')}
             </Button>
             <Button variant="secondary" onClick={() => skip(rule)}>
-              Пропустить
+              {t('recurring.skip')}
             </Button>
           </div>
         </div>

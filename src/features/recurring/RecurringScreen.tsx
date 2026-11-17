@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Bell, Plus, Repeat } from 'lucide-react';
 import { navigate } from '../../app/router';
-import { dayKey, formatInTz, fromDateTimeInput } from '../../domain/dates';
+import { dayKey, formatDate, fromDateTimeInput } from '../../domain/dates';
 import { newId } from '../../domain/ids';
-import { describeRule, FREQ_LABELS, nextOccurrenceAfter } from '../../domain/recurrence';
+import { describeRule, FREQS, freqLabel, nextOccurrenceAfter } from '../../domain/recurrence';
 import { formatMoney, fractionDigits, toDecimalString, tryParseMinor } from '../../domain/money';
 import type { RecurrenceFreq, RecurringRule, TransactionType } from '../../domain/types';
 import { byOrder, useData } from '../../stores/dataStore';
@@ -23,8 +23,10 @@ import {
 import { Screen } from '../../ui/Screen';
 import { categoryTitle, useLookups } from '../shared/hooks';
 import { notificationsSupported, requestNotificationPermission } from './notifications';
+import { useT } from '../../i18n';
 
 export function RecurringScreen() {
+  const t = useT();
   const recurring = useData((s) => s.recurring);
   const settings = useData((s) => s.settings);
   const updateSettings = useData((s) => s.updateSettings);
@@ -42,17 +44,17 @@ export function RecurringScreen() {
     await updateSettings({ notificationsEnabled: granted });
     toast(
       granted
-        ? { text: 'Уведомления включены' }
-        : { text: 'Браузер не разрешил уведомления', tone: 'warning' },
+        ? { text: t('recurring.notificationsOn') }
+        : { text: t('recurring.notificationsDenied'), tone: 'warning' },
     );
   };
 
   return (
     <Screen
-      title="Регулярные платежи"
+      title={t('more.recurring')}
       onBack={() => navigate('more')}
       actions={
-        <IconButton label="Добавить правило" onClick={() => setEditing('new')}>
+        <IconButton label={t('recurring.addRule')} onClick={() => setEditing('new')}>
           <Plus />
         </IconButton>
       }
@@ -61,20 +63,18 @@ export function RecurringScreen() {
         {notificationsSupported() && !settings.notificationsEnabled && (
           <Card className="flex items-center gap-3">
             <Bell size={20} aria-hidden="true" className="shrink-0 text-accent" />
-            <p className="flex-1 text-sm">
-              Напоминания приходят, когда приложение открыто или работает в фоне.
-            </p>
+            <p className="flex-1 text-sm">{t('recurring.notificationsHint')}</p>
             <Button variant="secondary" onClick={enableNotifications}>
-              Включить
+              {t('recurring.enable')}
             </Button>
           </Card>
         )}
         {sorted.length === 0 ? (
           <EmptyState
             icon={<Repeat size={40} />}
-            title="Нет регулярных платежей"
-            text="Добавьте подписки, аренду или зарплату — приложение напомнит или добавит операцию само."
-            action={<Button onClick={() => setEditing('new')}>Добавить</Button>}
+            title={t('recurring.empty')}
+            text={t('recurring.emptyText')}
+            action={<Button onClick={() => setEditing('new')}>{t('common.add')}</Button>}
           />
         ) : (
           <ul className="flex flex-col gap-px overflow-hidden rounded-xl">
@@ -82,7 +82,7 @@ export function RecurringScreen() {
               const account = accountsById.get(r.template.accountId);
               const subtitle =
                 r.template.type === 'transfer'
-                  ? `Перевод → ${accountsById.get(r.template.toAccountId ?? '')?.name ?? '?'}`
+                  ? `${t('common.transfer')} → ${accountsById.get(r.template.toAccountId ?? '')?.name ?? '?'}`
                   : categoryTitle(categoriesById.get(r.template.categoryId ?? ''), categoriesById);
               return (
                 <li key={r.id}>
@@ -98,8 +98,10 @@ export function RecurringScreen() {
                       </span>
                       <span className="block text-sm text-muted">
                         {r.active
-                          ? `${r.mode === 'auto' ? 'Добавится' : 'Напомнить'} ${formatInTz(r.nextDate, settings.timeZone, 'd MMMM yyyy')}`
-                          : 'Отключено'}
+                          ? t(r.mode === 'auto' ? 'recurring.willAdd' : 'recurring.willRemind', {
+                              date: formatDate(r.nextDate, settings.timeZone, 'dayMonthYear'),
+                            })
+                          : t('recurring.disabled')}
                       </span>
                     </span>
                     <span className="tabular font-semibold">
@@ -120,6 +122,7 @@ export function RecurringScreen() {
 }
 
 function RuleForm({ rule, onClose }: { rule?: RecurringRule; onClose: () => void }) {
+  const t = useT();
   const accounts = useData((s) => s.accounts);
   const categories = useData((s) => s.categories);
   const settings = useData((s) => s.settings);
@@ -150,20 +153,20 @@ function RuleForm({ rule, onClose }: { rule?: RecurringRule; onClose: () => void
   const categoryOptions = categories.filter((c) => c.kind === type && !c.archived).sort(byOrder);
 
   const save = async () => {
-    if (!name.trim()) return setError('Введите название');
-    if (!account) return setError('Выберите счёт');
+    if (!name.trim()) return setError(t('form.enterName'));
+    if (!account) return setError(t('editor.chooseAccount'));
     const value = tryParseMinor(amount, digits);
-    if (value === null || value <= 0) return setError('Введите сумму');
+    if (value === null || value <= 0) return setError(t('editor.enterAmount'));
     if (type === 'transfer' && (!toAccountId || toAccountId === accountId))
-      return setError('Выберите другой счёт зачисления');
-    if (type !== 'transfer' && !categoryId) return setError('Выберите категорию');
+      return setError(t('recurring.otherTarget'));
+    if (type !== 'transfer' && !categoryId) return setError(t('editor.chooseCategory'));
     const n = Number.parseInt(interval, 10);
-    if (!Number.isFinite(n) || n < 1 || n > 365) return setError('Интервал — от 1 до 365');
+    if (!Number.isFinite(n) || n < 1 || n > 365) return setError(t('recurring.intervalRange'));
     const now = Date.now();
     const startDate = fromDateTimeInput(`${start}T10:00`, settings.timeZone);
     const endDate = end ? fromDateTimeInput(`${end}T23:59`, settings.timeZone) : undefined;
     if (endDate !== undefined && endDate < startDate)
-      return setError('Дата окончания раньше начала');
+      return setError(t('recurring.endBeforeStart'));
     const base = { startDate, freq, interval: n, endDate };
     const next: RecurringRule = {
       id: rule?.id ?? newId(),
@@ -188,7 +191,7 @@ function RuleForm({ rule, onClose }: { rule?: RecurringRule; onClose: () => void
       updatedAt: now,
     };
     await saveRecurring(next);
-    toast({ text: 'Правило сохранено' });
+    toast({ text: t('recurring.saved') });
     onClose();
   };
 
@@ -197,45 +200,45 @@ function RuleForm({ rule, onClose }: { rule?: RecurringRule; onClose: () => void
       open
       tall
       onClose={onClose}
-      title={rule ? 'Регулярный платёж' : 'Новый регулярный платёж'}
+      title={rule ? t('recurring.title') : t('recurring.new')}
       footer={
         <div className="flex gap-2">
           {rule && (
             <Button variant="danger" onClick={() => setConfirm(true)}>
-              Удалить
+              {t('common.delete')}
             </Button>
           )}
           <Button block onClick={save}>
-            Сохранить
+            {t('common.save')}
           </Button>
         </div>
       }
     >
       <div className="flex flex-col gap-4">
-        <Field label="Название">
+        <Field label={t('common.name')}>
           {(id) => (
             <TextInput
               id={id}
-              placeholder="Например, Интернет"
+              placeholder={t('recurring.namePlaceholder')}
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
           )}
         </Field>
         <SegmentedControl
-          label="Тип"
+          label={t('account.kind')}
           value={type}
           options={[
-            { value: 'expense', label: 'Расход' },
-            { value: 'income', label: 'Доход' },
-            { value: 'transfer', label: 'Перевод' },
+            { value: 'expense', label: t('common.expense') },
+            { value: 'income', label: t('common.income') },
+            { value: 'transfer', label: t('common.transfer') },
           ]}
           onChange={(v) => {
             setType(v);
             setCategoryId('');
           }}
         />
-        <Field label={type === 'transfer' ? 'Со счёта' : 'Счёт'}>
+        <Field label={type === 'transfer' ? t('editor.fromAccount') : t('common.account')}>
           {(id) => (
             <Select id={id} value={accountId} onChange={(e) => setAccountId(e.target.value)}>
               {active.map((a) => (
@@ -247,10 +250,10 @@ function RuleForm({ rule, onClose }: { rule?: RecurringRule; onClose: () => void
           )}
         </Field>
         {type === 'transfer' ? (
-          <Field label="На счёт">
+          <Field label={t('editor.toAccount')}>
             {(id) => (
               <Select id={id} value={toAccountId} onChange={(e) => setToAccountId(e.target.value)}>
-                <option value="">Выберите</option>
+                <option value="">{t('common.choose')}</option>
                 {active
                   .filter((a) => a.id !== accountId && a.currency === account?.currency)
                   .map((a) => (
@@ -262,10 +265,10 @@ function RuleForm({ rule, onClose }: { rule?: RecurringRule; onClose: () => void
             )}
           </Field>
         ) : (
-          <Field label="Категория">
+          <Field label={t('common.category')}>
             {(id) => (
               <Select id={id} value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-                <option value="">Выберите</option>
+                <option value="">{t('common.choose')}</option>
                 {categoryOptions.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.parentId ? `— ${c.name}` : c.name}
@@ -275,7 +278,9 @@ function RuleForm({ rule, onClose }: { rule?: RecurringRule; onClose: () => void
             )}
           </Field>
         )}
-        <Field label={`Сумма, ${account?.currency ?? settings.defaultCurrency}`}>
+        <Field
+          label={t('recurring.amount', { currency: account?.currency ?? settings.defaultCurrency })}
+        >
           {(id) => (
             <TextInput
               id={id}
@@ -286,22 +291,22 @@ function RuleForm({ rule, onClose }: { rule?: RecurringRule; onClose: () => void
           )}
         </Field>
         <div className="grid grid-cols-[1fr_6rem] gap-2">
-          <Field label="Повтор">
+          <Field label={t('recurring.repeat')}>
             {(id) => (
               <Select
                 id={id}
                 value={freq}
                 onChange={(e) => setFreq(e.target.value as RecurrenceFreq)}
               >
-                {Object.entries(FREQ_LABELS).map(([k, label]) => (
+                {FREQS.map((k) => (
                   <option key={k} value={k}>
-                    {label}
+                    {freqLabel(k)}
                   </option>
                 ))}
               </Select>
             )}
           </Field>
-          <Field label="Интервал">
+          <Field label={t('recurring.interval')}>
             {(id) => (
               <TextInput
                 id={id}
@@ -313,7 +318,7 @@ function RuleForm({ rule, onClose }: { rule?: RecurringRule; onClose: () => void
           </Field>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <Field label="Первый платёж">
+          <Field label={t('recurring.firstPayment')}>
             {(id) => (
               <TextInput
                 id={id}
@@ -323,27 +328,25 @@ function RuleForm({ rule, onClose }: { rule?: RecurringRule; onClose: () => void
               />
             )}
           </Field>
-          <Field label="Окончание">
+          <Field label={t('recurring.end')}>
             {(id) => (
               <TextInput id={id} type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
             )}
           </Field>
         </div>
         <SegmentedControl
-          label="Режим"
+          label={t('recurring.mode')}
           value={mode}
           options={[
-            { value: 'remind', label: 'Напоминать' },
-            { value: 'auto', label: 'Добавлять сам' },
+            { value: 'remind', label: t('recurring.modeRemind') },
+            { value: 'auto', label: t('recurring.modeAuto') },
           ]}
           onChange={setMode}
         />
         <p className="-mt-2 text-sm text-muted">
-          {mode === 'remind'
-            ? 'В срок появится карточка с кнопкой «Добавить операцию» и уведомление.'
-            : 'Операция добавится автоматически при открытии приложения в день платежа или позже.'}
+          {mode === 'remind' ? t('recurring.modeRemindHint') : t('recurring.modeAutoHint')}
         </p>
-        {rule && <Toggle checked={isActive} onChange={setIsActive} label="Правило активно" />}
+        {rule && <Toggle checked={isActive} onChange={setIsActive} label={t('recurring.active')} />}
         {error && (
           <p role="alert" className="text-sm font-medium text-expense">
             {error}
@@ -352,8 +355,8 @@ function RuleForm({ rule, onClose }: { rule?: RecurringRule; onClose: () => void
       </div>
       <ConfirmDialog
         open={confirm}
-        title="Удалить правило?"
-        text="Уже созданные операции останутся."
+        title={t('recurring.deleteConfirm')}
+        text={t('recurring.deleteHint')}
         onCancel={() => setConfirm(false)}
         onConfirm={async () => {
           if (rule) await deleteRecurring(rule.id);

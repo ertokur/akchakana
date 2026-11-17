@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { AlertTriangle, ChevronLeft, ChevronRight, Plus, Target } from 'lucide-react';
 import { addMonths } from 'date-fns';
 import { budgetStatus, isBudgetActive, type BudgetStatus } from '../../domain/budgets';
-import { daysOfPeriod, formatInTz, monthKey, startOfDayKey } from '../../domain/dates';
+import { daysOfPeriod, formatDate, monthKey, startOfDayKey } from '../../domain/dates';
 import { newId } from '../../domain/ids';
 import {
   COMMON_CURRENCIES,
@@ -29,6 +29,7 @@ import { IconBadge } from '../../ui/Icon';
 import { Screen } from '../../ui/Screen';
 import { navigate } from '../../app/router';
 import { useNow } from '../shared/hooks';
+import { useT } from '../../i18n';
 
 function shiftMonth(month: string, delta: number): string {
   const [y, m] = month.split('-').map(Number);
@@ -37,6 +38,7 @@ function shiftMonth(month: string, delta: number): string {
 }
 
 export function BudgetsScreen() {
+  const t = useT();
   const budgets = useData((s) => s.budgets);
   const categories = useData((s) => s.categories);
   const transactions = useData((s) => s.transactions);
@@ -73,24 +75,24 @@ export function BudgetsScreen() {
       : month > currentMonth
         ? totalDays
         : 0;
-  const monthLabel = formatInTz(monthStart + 12 * 3600_000, timeZone, 'LLLL yyyy');
+  const monthLabel = formatDate(monthStart + 12 * 3600_000, timeZone, 'monthYear');
 
   return (
     <Screen
-      title="Бюджеты"
+      title={t('more.budgets')}
       onBack={() => navigate('more')}
       actions={
-        <IconButton label="Добавить бюджет" onClick={() => setEditing('new')}>
+        <IconButton label={t('budget.add')} onClick={() => setEditing('new')}>
           <Plus />
         </IconButton>
       }
       header={
         <div className="flex items-center justify-between">
-          <IconButton label="Предыдущий месяц" onClick={() => setMonth(shiftMonth(month, -1))}>
+          <IconButton label={t('budget.prevMonth')} onClick={() => setMonth(shiftMonth(month, -1))}>
             <ChevronLeft />
           </IconButton>
           <span className="font-semibold first-letter:uppercase">{monthLabel}</span>
-          <IconButton label="Следующий месяц" onClick={() => setMonth(shiftMonth(month, 1))}>
+          <IconButton label={t('budget.nextMonth')} onClick={() => setMonth(shiftMonth(month, 1))}>
             <ChevronRight />
           </IconButton>
         </div>
@@ -99,9 +101,9 @@ export function BudgetsScreen() {
       {statuses.length === 0 ? (
         <EmptyState
           icon={<Target size={40} />}
-          title="Бюджетов нет"
-          text="Задайте месячный лимит на все расходы или на отдельную категорию."
-          action={<Button onClick={() => setEditing('new')}>Добавить бюджет</Button>}
+          title={t('budget.empty')}
+          text={t('budget.emptyText')}
+          action={<Button onClick={() => setEditing('new')}>{t('budget.add')}</Button>}
         />
       ) : (
         <ul className="flex flex-col gap-3">
@@ -132,12 +134,15 @@ function BudgetCard({
   daysLeft: number;
   onOpen: () => void;
 }) {
+  const t = useT();
   const categories = useData((s) => s.categories);
   const { budget, spent, limit, level } = status;
   const category = budget.categoryId
     ? categories.find((c) => c.id === budget.categoryId)
     : undefined;
-  const name = budget.categoryId ? (category?.name ?? 'Удалённая категория') : 'Все расходы';
+  const name = budget.categoryId
+    ? (category?.name ?? t('budget.deletedCategory'))
+    : t('budget.allExpenses');
   const left = limit - spent;
   const perDay = daysLeft > 0 && left > 0 ? Math.floor(left / daysLeft) : 0;
   return (
@@ -152,33 +157,39 @@ function BudgetCard({
           <span className="min-w-0 flex-1 truncate font-semibold">{name}</span>
           {level === 'over' && (
             <span className="flex items-center gap-1 text-sm font-semibold text-expense">
-              <AlertTriangle size={16} aria-hidden="true" /> Превышен
+              <AlertTriangle size={16} aria-hidden="true" /> {t('budget.over')}
             </span>
           )}
           {level === 'warning' && (
             <span className="flex items-center gap-1 text-sm font-semibold text-warning">
-              <AlertTriangle size={16} aria-hidden="true" /> Почти исчерпан
+              <AlertTriangle size={16} aria-hidden="true" /> {t('budget.almost')}
             </span>
           )}
         </div>
         <ProgressBar
           value={spent}
           max={limit}
-          label={`${name}: потрачено ${Math.round(status.ratio * 100)}%`}
+          label={t('budget.spentAria', { name, percent: Math.round(status.ratio * 100) })}
         />
         <div className="tabular flex justify-between text-sm">
           <span>
-            {formatMoney(spent, budget.currency)} из {formatMoney(limit, budget.currency)}
+            {t('budget.spentOf', {
+              spent: formatMoney(spent, budget.currency),
+              limit: formatMoney(limit, budget.currency),
+            })}
           </span>
           <span className={left < 0 ? 'font-semibold text-expense' : 'text-muted'}>
             {left < 0
-              ? `перерасход ${formatMoney(-left, budget.currency)}`
-              : `осталось ${formatMoney(left, budget.currency)}`}
+              ? t('budget.overspent', { amount: formatMoney(-left, budget.currency) })
+              : t('budget.left', { amount: formatMoney(left, budget.currency) })}
           </span>
         </div>
         {perDay > 0 && (
           <p className="text-sm text-muted">
-            Можно тратить {formatMoney(perDay, budget.currency)} в день ({daysLeft} дн.)
+            {t('budget.perDay', {
+              amount: formatMoney(perDay, budget.currency),
+              count: daysLeft,
+            })}
           </p>
         )}
       </Card>
@@ -195,6 +206,7 @@ function BudgetForm({
   month: string;
   onClose: () => void;
 }) {
+  const t = useT();
   const categories = useData((s) => s.categories);
   const budgets = useData((s) => s.budgets);
   const settings = useData((s) => s.settings);
@@ -211,12 +223,12 @@ function BudgetForm({
 
   const save = async () => {
     const value = tryParseMinor(limit, digits);
-    if (value === null || value <= 0) return setError('Введите лимит');
+    if (value === null || value <= 0) return setError(t('budget.enterLimit'));
     const cat = categoryId || null;
     const duplicate = budgets.some(
       (b) => b.id !== budget?.id && b.categoryId === cat && b.currency === currency,
     );
-    if (duplicate) return setError('Такой бюджет уже есть');
+    if (duplicate) return setError(t('budget.duplicate'));
     const now = Date.now();
     await saveBudget({
       id: budget?.id ?? newId(),
@@ -228,7 +240,7 @@ function BudgetForm({
       createdAt: budget?.createdAt ?? now,
       updatedAt: now,
     });
-    toast({ text: 'Бюджет сохранён' });
+    toast({ text: t('budget.saved') });
     onClose();
   };
 
@@ -236,25 +248,25 @@ function BudgetForm({
     <BottomSheet
       open
       onClose={onClose}
-      title={budget ? 'Бюджет' : 'Новый бюджет'}
+      title={budget ? t('budget.title') : t('budget.new')}
       footer={
         <div className="flex gap-2">
           {budget && (
             <Button variant="danger" onClick={() => setConfirm(true)}>
-              Удалить
+              {t('common.delete')}
             </Button>
           )}
           <Button block onClick={save}>
-            Сохранить
+            {t('common.save')}
           </Button>
         </div>
       }
     >
       <div className="flex flex-col gap-4">
-        <Field label="На что">
+        <Field label={t('budget.target')}>
           {(id) => (
             <Select id={id} value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-              <option value="">Все расходы</option>
+              <option value="">{t('budget.allExpenses')}</option>
               {options.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.parentId ? `— ${c.name}` : c.name}
@@ -264,7 +276,7 @@ function BudgetForm({
           )}
         </Field>
         <div className="grid grid-cols-[1fr_7rem] gap-2">
-          <Field label="Лимит в месяц">
+          <Field label={t('budget.limit')}>
             {(id) => (
               <TextInput
                 id={id}
@@ -274,7 +286,7 @@ function BudgetForm({
               />
             )}
           </Field>
-          <Field label="Валюта">
+          <Field label={t('common.currency')}>
             {(id) => (
               <Select id={id} value={currency} onChange={(e) => setCurrency(e.target.value)}>
                 {COMMON_CURRENCIES.map((c) => (
@@ -284,10 +296,7 @@ function BudgetForm({
             )}
           </Field>
         </div>
-        <p className="text-sm text-muted">
-          Бюджет действует каждый месяц, начиная с выбранного. Подкатегории учитываются в бюджете
-          родителя.
-        </p>
+        <p className="text-sm text-muted">{t('budget.hint')}</p>
         {error && (
           <p role="alert" className="text-sm font-medium text-expense">
             {error}
@@ -296,7 +305,7 @@ function BudgetForm({
       </div>
       <ConfirmDialog
         open={confirm}
-        title="Удалить бюджет?"
+        title={t('budget.deleteConfirm')}
         onCancel={() => setConfirm(false)}
         onConfirm={async () => {
           if (budget) await deleteBudget(budget.id);

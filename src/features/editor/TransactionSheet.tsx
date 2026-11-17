@@ -7,6 +7,7 @@ import {
   formatMinor,
   formatMoney,
   fractionDigits,
+  numberSeparators,
   toDecimalString,
   tryParseMinor,
 } from '../../domain/money';
@@ -22,11 +23,12 @@ import { SubcategoryBubbles } from './SubcategoryBubbles';
 import { useBalances } from '../shared/hooks';
 import { applyKey, CalcKeypad } from './CalcKeypad';
 import { CategoryGrid } from './CategoryGrid';
+import { useT, type DictKey } from '../../i18n';
 
-const TYPES: { value: TransactionType; label: string }[] = [
-  { value: 'expense', label: 'Расход' },
-  { value: 'income', label: 'Доход' },
-  { value: 'transfer', label: 'Перевод' },
+const TYPES: { value: TransactionType; label: DictKey }[] = [
+  { value: 'expense', label: 'common.expense' },
+  { value: 'income', label: 'common.income' },
+  { value: 'transfer', label: 'common.transfer' },
 ];
 
 export function TransactionSheet() {
@@ -57,6 +59,7 @@ function EditorForm({
   const saveTransaction = useData((s) => s.saveTransaction);
   const deleteTransaction = useData((s) => s.deleteTransaction);
   const toast = useUi((s) => s.toast);
+  const tr = useT();
 
   const original = editor.mode === 'edit' ? editor.transaction : undefined;
   const preset = editor.mode === 'new' ? editor.preset : undefined;
@@ -150,21 +153,21 @@ function EditorForm({
 
   const submit = async () => {
     const amount = amountResult.value;
-    if (amount === undefined) return setError(amountResult.error ?? 'Неверная сумма');
-    if (amount === 0) return setError('Введите сумму');
-    if (!account) return setError('Выберите счёт');
+    if (amount === undefined) return setError(amountResult.error ?? tr('editor.invalidAmount'));
+    if (amount === 0) return setError(tr('editor.enterAmount'));
+    if (!account) return setError(tr('editor.chooseAccount'));
     let toAmount: number | undefined;
     if (type === 'transfer') {
-      if (!target) return setError('Выберите счёт зачисления');
-      if (target.id === account.id) return setError('Счета перевода должны различаться');
-      if (amount < 0) return setError('Сумма перевода должна быть положительной');
+      if (!target) return setError(tr('editor.chooseTargetAccount'));
+      if (target.id === account.id) return setError(tr('editor.sameAccounts'));
+      if (amount < 0) return setError(tr('editor.transferPositive'));
       if (crossCurrency) {
         const parsed = tryParseMinor(toAmountText, fractionDigits(target.currency));
-        if (parsed === null || parsed <= 0) return setError('Введите сумму зачисления');
+        if (parsed === null || parsed <= 0) return setError(tr('editor.enterTargetAmount'));
         toAmount = parsed;
       }
     } else if (!categoryId) {
-      return setError('Выберите категорию');
+      return setError(tr('editor.chooseCategory'));
     }
     const now = Date.now();
     const t: Transaction = {
@@ -189,7 +192,7 @@ function EditorForm({
     };
     await saveTransaction(t);
     onClose();
-    toast({ text: original ? 'Операция сохранена' : 'Операция добавлена' });
+    toast({ text: original ? tr('editor.saved') : tr('editor.added') });
     checkBudgetsAfterSave(t);
   };
 
@@ -198,15 +201,19 @@ function EditorForm({
     await deleteTransaction(original.id);
     onClose();
     toast({
-      text: 'Операция удалена',
-      action: { label: 'Отменить', run: () => void saveTransaction(original) },
+      text: tr('editor.deleted'),
+      action: { label: tr('common.undo'), run: () => void saveTransaction(original) },
     });
   };
 
   const display =
     expr === ''
       ? '0'
-      : expr.replace(/\*/g, '×').replace(/\//g, '÷').replace(/-/g, '−').replace(/\./g, ',');
+      : expr
+          .replace(/\*/g, '×')
+          .replace(/\//g, '÷')
+          .replace(/-/g, '−')
+          .replace(/\./g, numberSeparators().decimal);
   const currency = account?.currency ?? settings.defaultCurrency;
 
   return (
@@ -214,10 +221,10 @@ function EditorForm({
       open
       tall
       onClose={onClose}
-      title={original ? 'Изменить операцию' : 'Новая операция'}
+      title={original ? tr('editor.editTitle') : tr('editor.newTitle')}
       headerExtra={
         original && (
-          <IconButton label="Удалить операцию" onClick={() => setConfirmDelete(true)}>
+          <IconButton label={tr('editor.delete')} onClick={() => setConfirmDelete(true)}>
             <Trash2 size={20} className="text-expense" />
           </IconButton>
         )
@@ -227,7 +234,7 @@ function EditorForm({
           <div className="flex items-end justify-between gap-2 rounded-2xl bg-surface-2 px-4 py-2">
             <div className="min-w-0 flex-1">
               <output
-                aria-label="Сумма"
+                aria-label={tr('editor.amount')}
                 aria-live="polite"
                 className={`tabular block truncate text-right text-3xl font-bold ${type === 'income' ? 'text-income' : type === 'expense' ? 'text-expense' : ''}`}
               >
@@ -248,20 +255,19 @@ function EditorForm({
           )}
           {amountResult.value !== undefined && amountResult.value < 0 && type !== 'transfer' && (
             <p className="text-center text-sm text-muted">
-              Отрицательная сумма сохранится как возврат:{' '}
-              {formatMoney(amountResult.value, currency)}
+              {tr('editor.refundHint')} {formatMoney(amountResult.value, currency)}
             </p>
           )}
-          <CalcKeypad onKey={onKey} onSubmit={submit} submitLabel="Сохранить" />
+          <CalcKeypad onKey={onKey} onSubmit={submit} submitLabel={tr('common.save')} />
         </div>
       }
     >
       <div className="flex flex-col gap-3">
         <SegmentedControl
-          label="Тип операции"
+          label={tr('editor.type')}
           size="sm"
           value={type}
-          options={TYPES}
+          options={TYPES.map((o) => ({ value: o.value, label: tr(o.label) }))}
           onChange={(v) => {
             setType(v);
             setError(null);
@@ -272,7 +278,7 @@ function EditorForm({
         <div className="flex items-stretch gap-2">
           {type === 'income' ? (
             <FlowEndpoint
-              caption="Из категории"
+              caption={tr('editor.fromCategory')}
               name={category?.name}
               detail={parentCategory?.name}
               color={category?.color}
@@ -281,7 +287,7 @@ function EditorForm({
             />
           ) : (
             <FlowEndpoint
-              caption="Со счёта"
+              caption={tr('editor.fromAccount')}
               name={account?.name}
               detail={account && formatMoney(balances.get(account.id) ?? 0, account.currency)}
               color={account?.color}
@@ -295,7 +301,7 @@ function EditorForm({
           {type === 'expense' ? (
             <FlowEndpoint
               align="right"
-              caption="В категорию"
+              caption={tr('editor.toCategory')}
               name={category?.name}
               detail={parentCategory?.name}
               color={category?.color}
@@ -305,7 +311,7 @@ function EditorForm({
           ) : type === 'income' ? (
             <FlowEndpoint
               align="right"
-              caption="На счёт"
+              caption={tr('editor.toAccount')}
               name={account?.name}
               detail={account && formatMoney(balances.get(account.id) ?? 0, account.currency)}
               color={account?.color}
@@ -315,7 +321,7 @@ function EditorForm({
           ) : (
             <FlowEndpoint
               align="right"
-              caption="На счёт"
+              caption={tr('editor.toAccount')}
               name={target?.name}
               detail={target && formatMoney(balances.get(target.id) ?? 0, target.currency)}
               color={target?.color}
@@ -339,7 +345,9 @@ function EditorForm({
 
         {crossCurrency && target && (
           <label className="flex items-center gap-2">
-            <span className="text-sm text-muted">Зачислено, {target.currency}</span>
+            <span className="text-sm text-muted">
+              {tr('editor.credited', { currency: target.currency })}
+            </span>
             <TextInput
               inputMode="decimal"
               value={toAmountText}
@@ -353,20 +361,20 @@ function EditorForm({
         <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2">
           <TextInput
             type="datetime-local"
-            aria-label="Дата и время"
+            aria-label={tr('editor.dateTime')}
             value={date}
             onChange={(e) => setDate(e.target.value)}
           />
           <TextInput
-            aria-label="Заметка"
-            placeholder="Заметка"
+            aria-label={tr('common.note')}
+            placeholder={tr('common.note')}
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />
         </div>
         <TextInput
-          aria-label="Теги через запятую"
-          placeholder="Теги через запятую"
+          aria-label={tr('editor.tags')}
+          placeholder={tr('editor.tags')}
           value={tags}
           onChange={(e) => setTags(e.target.value)}
         />
@@ -374,7 +382,11 @@ function EditorForm({
 
       <AccountPickerSheet
         open={picker === 'account' || picker === 'target'}
-        title={picker === 'target' || type === 'income' ? 'На счёт' : 'Со счёта'}
+        title={
+          picker === 'target' || type === 'income'
+            ? tr('editor.toAccount')
+            : tr('editor.fromAccount')
+        }
         accounts={sortedAccounts}
         value={picker === 'target' ? toAccountId : accountId}
         exclude={picker === 'target' ? accountId : undefined}
@@ -388,7 +400,7 @@ function EditorForm({
       <BottomSheet
         open={picker === 'category'}
         onClose={() => setPicker(null)}
-        title={type === 'income' ? 'Категория дохода' : 'Категория расхода'}
+        title={type === 'income' ? tr('editor.incomeCategory') : tr('editor.expenseCategory')}
       >
         {type !== 'transfer' && (
           <CategoryGrid
@@ -405,7 +417,7 @@ function EditorForm({
       </BottomSheet>
       <ConfirmDialog
         open={confirmDelete}
-        title="Удалить операцию?"
+        title={tr('editor.deleteConfirm')}
         onCancel={() => setConfirmDelete(false)}
         onConfirm={remove}
       />

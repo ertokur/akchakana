@@ -4,12 +4,13 @@ import { formatMoney } from '../../domain/money';
 import type { Transaction } from '../../domain/types';
 import { useData } from '../../stores/dataStore';
 import { useUi } from '../../stores/uiStore';
+import { t } from '../../i18n';
 
 /** Показывает предупреждение, если сохранённая операция приблизила или вывела бюджет за лимит. */
-export function checkBudgetsAfterSave(t: Transaction): void {
+export function checkBudgetsAfterSave(tx: Transaction): void {
   const { budgets, categories, transactions, settings } = useData.getState();
-  const month = monthKey(t.date, settings.timeZone);
-  const affected = budgetsAffectedBy(t, budgets, categories).filter((b) =>
+  const month = monthKey(tx.date, settings.timeZone);
+  const affected = budgetsAffectedBy(tx, budgets, categories).filter((b) =>
     isBudgetActive(b, month),
   );
   const statuses = affected
@@ -19,16 +20,21 @@ export function checkBudgetsAfterSave(t: Transaction): void {
   const worst = statuses[0];
   if (!worst) return;
   const name = worst.budget.categoryId
-    ? (categories.find((c) => c.id === worst.budget.categoryId)?.name ?? 'Категория')
-    : 'Все расходы';
+    ? (categories.find((c) => c.id === worst.budget.categoryId)?.name ?? t('common.category'))
+    : t('budget.allExpenses');
   const spent = formatMoney(worst.spent, worst.budget.currency);
   const limit = formatMoney(worst.limit, worst.budget.currency);
   useUi.getState().toast(
     worst.level === 'over'
-      ? { tone: 'error', text: `Бюджет «${name}» превышен: ${spent} из ${limit}`, duration: 6000 }
+      ? { tone: 'error', text: t('budget.toastOver', { name, spent, limit }), duration: 6000 }
       : {
           tone: 'warning',
-          text: `Бюджет «${name}»: потрачено ${Math.round(worst.ratio * 100)}% (${spent} из ${limit})`,
+          text: t('budget.toastWarning', {
+            name,
+            percent: Math.round(worst.ratio * 100),
+            spent,
+            limit,
+          }),
           duration: 5000,
         },
   );

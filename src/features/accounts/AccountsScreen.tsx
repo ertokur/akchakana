@@ -3,7 +3,6 @@ import { Plus } from 'lucide-react';
 import { totalsByCurrency } from '../../domain/balances';
 import { formatMoney } from '../../domain/money';
 import type { Account } from '../../domain/types';
-import { ACCOUNT_KIND_LABELS } from '../../db/seed';
 import { byOrder, useData } from '../../stores/dataStore';
 import { Card, EmptyState, IconButton, SegmentedControl } from '../../ui/controls';
 import { IconBadge } from '../../ui/Icon';
@@ -13,8 +12,10 @@ import { useBalances } from '../shared/hooks';
 import { AccountForm } from './AccountForm';
 import { DebtsPanel } from './DebtsPanel';
 import { IncomeStrip } from './IncomeStrip';
+import { useT } from '../../i18n';
 
 export function AccountsScreen() {
+  const t = useT();
   const route = useRoute();
   const tab = route === 'debts' ? 'debts' : 'accounts';
   const [editing, setEditing] = useState<Account | 'new' | null>(null);
@@ -22,10 +23,10 @@ export function AccountsScreen() {
 
   return (
     <Screen
-      title={tab === 'accounts' ? 'Счета' : 'Долги'}
+      title={tab === 'accounts' ? t('nav.accounts') : t('more.debts')}
       actions={
         <IconButton
-          label={tab === 'accounts' ? 'Добавить счёт' : 'Добавить долг'}
+          label={tab === 'accounts' ? t('account.add') : t('debt.add')}
           onClick={() => (tab === 'accounts' ? setEditing('new') : setNewDebt(true))}
         >
           <Plus />
@@ -33,11 +34,11 @@ export function AccountsScreen() {
       }
       header={
         <SegmentedControl
-          label="Раздел"
+          label={t('accounts.section')}
           value={tab}
           options={[
-            { value: 'accounts', label: 'Счета' },
-            { value: 'debts', label: 'Долги' },
+            { value: 'accounts', label: t('nav.accounts') },
+            { value: 'debts', label: t('more.debts') },
           ]}
           onChange={(v) => navigate(v)}
         />
@@ -62,6 +63,7 @@ export function AccountsScreen() {
 }
 
 function AccountsList({ onOpen }: { onOpen: (a: Account | 'new') => void }) {
+  const t = useT();
   const accounts = useData((s) => s.accounts);
   const balances = useBalances();
   const sorted = useMemo(() => [...accounts].sort(byOrder), [accounts]);
@@ -72,15 +74,15 @@ function AccountsList({ onOpen }: { onOpen: (a: Account | 'new') => void }) {
   if (accounts.length === 0) {
     return (
       <EmptyState
-        title="Нет счетов"
-        text="Добавьте наличные, карту или накопительный счёт."
+        title={t('home.noAccounts')}
+        text={t('accounts.emptyText')}
         action={
           <button
             type="button"
             className="min-h-11 rounded-xl bg-accent px-4 font-semibold text-accent-fg"
             onClick={() => onOpen('new')}
           >
-            Добавить счёт
+            {t('account.add')}
           </button>
         }
       />
@@ -90,7 +92,7 @@ function AccountsList({ onOpen }: { onOpen: (a: Account | 'new') => void }) {
   return (
     <div className="flex flex-col gap-4">
       <Card>
-        <div className="text-sm text-muted">Всего на счетах</div>
+        <div className="text-sm text-muted">{t('accounts.total')}</div>
         {[...totals].map(([currency, total]) => (
           <div
             key={currency}
@@ -99,15 +101,13 @@ function AccountsList({ onOpen }: { onOpen: (a: Account | 'new') => void }) {
             {formatMoney(total, currency)}
           </div>
         ))}
-        {totals.size > 1 && (
-          <p className="mt-1 text-xs text-muted">Суммы в разных валютах не конвертируются.</p>
-        )}
+        {totals.size > 1 && <p className="mt-1 text-xs text-muted">{t('accounts.noConversion')}</p>}
       </Card>
       <AccountGroup accounts={active} balances={balances} onOpen={onOpen} />
       {archived.length > 0 && (
         <details>
           <summary className="min-h-11 cursor-pointer py-2 font-medium text-muted">
-            Скрытые счета ({archived.length})
+            {t('accounts.hidden', { count: archived.length })}
           </summary>
           <AccountGroup accounts={archived} balances={balances} onOpen={onOpen} />
         </details>
@@ -125,6 +125,7 @@ function AccountGroup({
   balances: Map<string, number>;
   onOpen: (a: Account) => void;
 }) {
+  const t = useT();
   return (
     <ul className="flex flex-col gap-px overflow-hidden rounded-xl">
       {accounts.map((a) => {
@@ -140,9 +141,9 @@ function AccountGroup({
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-medium">{a.name}</span>
                 <span className="block text-sm text-muted">
-                  {ACCOUNT_KIND_LABELS[a.kind]}
+                  {t(`account.kind.${a.kind}`)}
                   {a.kind === 'credit' && a.creditLimit
-                    ? ` · доступно ${formatMoney(a.creditLimit + balance, a.currency)}`
+                    ? ` · ${t('account.available', { amount: formatMoney(a.creditLimit + balance, a.currency) })}`
                     : ''}
                 </span>
               </span>

@@ -1,4 +1,5 @@
 import { Icon } from '../../ui/Icon';
+import { useT } from '../../i18n';
 
 /**
  * Половина заголовка шторки операции, как в 1Money: «Со счёта» / «В категорию».
@@ -21,12 +22,13 @@ export function FlowEndpoint({
   onClick: () => void;
   align?: 'left' | 'right';
 }) {
+  const t = useT();
   const filled = !!name && !!color;
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={`${caption}: ${name ?? 'не выбрано'}. Изменить`}
+      aria-label={t('editor.endpointAria', { caption, name: name ?? t('common.notSelected') })}
       className={`flex min-h-20 min-w-0 flex-1 flex-col gap-1 rounded-2xl px-3 py-2 ${align === 'right' ? 'items-end text-right' : 'items-start text-left'} ${filled ? 'text-white' : 'border-2 border-dashed border-border text-muted'}`}
       style={filled ? { background: color } : undefined}
     >
@@ -41,7 +43,7 @@ export function FlowEndpoint({
         {caption}
       </span>
       <span className="line-clamp-2 w-full leading-tight font-semibold break-words">
-        {name ?? 'Выберите'}
+        {name ?? t('common.choose')}
       </span>
       {detail && (
         <span className={`tabular block w-full truncate text-xs ${filled ? 'text-white/90' : ''}`}>

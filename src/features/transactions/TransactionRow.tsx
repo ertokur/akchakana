@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { Trash2 } from 'lucide-react';
-import { formatInTz } from '../../domain/dates';
+import { formatDate } from '../../domain/dates';
+import { useT } from '../../i18n';
 import { formatMoney } from '../../domain/money';
 import type { Account, Category, Id, Transaction } from '../../domain/types';
 import { IconBadge } from '../../ui/Icon';
@@ -24,13 +25,14 @@ export const TransactionRow = memo(function TransactionRow({
   onOpen,
   onDelete,
 }: Props) {
+  const tr = useT();
   const swipe = useSwipeToDelete(() => onDelete(t));
   const account = accountsById.get(t.accountId);
   const category = t.categoryId ? categoriesById.get(t.categoryId) : undefined;
   const isTransfer = t.type === 'transfer';
   const target = t.toAccountId ? accountsById.get(t.toAccountId) : undefined;
 
-  const title = isTransfer ? 'Перевод' : categoryTitle(category, categoriesById);
+  const title = isTransfer ? tr('common.transfer') : categoryTitle(category, categoriesById);
   const subtitle = isTransfer
     ? `${account?.name ?? '?'} → ${target?.name ?? '?'}`
     : [account?.name, t.note].filter(Boolean).join(' · ');
@@ -58,7 +60,7 @@ export const TransactionRow = memo(function TransactionRow({
           onClick={() => {
             if (!swipe.wasSwiped()) onOpen(t);
           }}
-          aria-label={`${title}, ${amountText}${t.note ? `, ${t.note}` : ''}. Изменить`}
+          aria-label={`${title}, ${amountText}${t.note ? `, ${t.note}` : ''}. ${tr('common.edit')}`}
         >
           <IconBadge
             name={isTransfer ? 'transfer' : (category?.icon ?? 'tag')}
@@ -67,7 +69,7 @@ export const TransactionRow = memo(function TransactionRow({
           <span className="min-w-0 flex-1">
             <span className="block truncate font-medium">{title}</span>
             <span className="block truncate text-sm text-muted">
-              {subtitle || formatInTz(t.date, timeZone, 'HH:mm')}
+              {subtitle || formatDate(t.date, timeZone, 'time')}
             </span>
             {t.tags.length > 0 && (
               <span className="block truncate text-xs text-muted">
@@ -79,7 +81,7 @@ export const TransactionRow = memo(function TransactionRow({
             <span className={`tabular font-semibold whitespace-nowrap ${amountClass}`}>
               {amountText}
             </span>
-            {t.isRefund && <span className="text-xs text-muted">возврат</span>}
+            {t.isRefund && <span className="text-xs text-muted">{tr('transactions.refund')}</span>}
             {isTransfer && t.toAmount !== undefined && target && (
               <span className="tabular text-xs text-muted">
                 → {formatMoney(t.toAmount, target.currency)}

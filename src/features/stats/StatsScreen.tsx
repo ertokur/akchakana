@@ -2,8 +2,14 @@ import { useMemo, useState } from 'react';
 import type { ChartConfiguration } from 'chart.js';
 import { ChevronLeft, TrendingDown, TrendingUp } from 'lucide-react';
 import { summarize } from '../../domain/balances';
-import { formatInTz, previousPeriod, startOfDayKey } from '../../domain/dates';
-import { formatMinor, formatMoney, fractionDigits } from '../../domain/money';
+import {
+  formatDate,
+  formatInTz,
+  previousPeriod,
+  startOfDayKey,
+  type DateStyle,
+} from '../../domain/dates';
+import { formatMinor, formatMoney, fractionDigits, numberSeparators } from '../../domain/money';
 import {
   bucketFor,
   changePercent,
@@ -24,8 +30,10 @@ import { filterTransactions } from '../transactions/grouping';
 import { PeriodSwitcher } from '../transactions/PeriodSwitcher';
 import { AccountSelector } from '../shared/AccountSelector';
 import { ChartCanvas, cssVar, useIsDark } from './ChartCanvas';
+import { intlLocale, useT } from '../../i18n';
 
 export function StatsScreen() {
+  const t = useT();
   const transactions = useData((s) => s.transactions);
   const accounts = useData((s) => s.accounts);
   const categories = useData((s) => s.categories);
@@ -56,7 +64,9 @@ export function StatsScreen() {
 
   const slices = useMemo(
     () => totalsByCategory(current, categories, kind, currency, drill ? { parentId: drill } : {}),
-    [current, categories, kind, currency, drill],
+    // t — чтобы подписи «Без категории» и т. п. обновлялись при смене языка.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [current, categories, kind, currency, drill, t],
   );
   const total = slices.reduce((s, x) => s + x.amount, 0);
   const series = useMemo(
@@ -69,7 +79,7 @@ export function StatsScreen() {
 
   return (
     <Screen
-      title="Обзор"
+      title={t('nav.stats')}
       header={
         <div className="flex flex-col">
           <AccountSelector />
@@ -80,14 +90,14 @@ export function StatsScreen() {
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-2">
           <CompareCard
-            label="Расходы"
+            label={t('common.expenses')}
             value={sumNow.expense}
             prev={sumPrev.expense}
             currency={currency}
             higherIsBad
           />
           <CompareCard
-            label="Доходы"
+            label={t('common.incomes')}
             value={sumNow.income}
             prev={sumPrev.income}
             currency={currency}
@@ -96,12 +106,12 @@ export function StatsScreen() {
 
         <Card>
           <SegmentedControl
-            label="Тип операций на диаграмме"
+            label={t('stats.chartKind')}
             size="sm"
             value={kind}
             options={[
-              { value: 'expense', label: 'Расходы' },
-              { value: 'income', label: 'Доходы' },
+              { value: 'expense', label: t('common.expenses') },
+              { value: 'income', label: t('common.incomes') },
             ]}
             onChange={(v) => {
               setKind(v);
@@ -114,15 +124,15 @@ export function StatsScreen() {
               onClick={() => setDrill(null)}
               className="mt-2 flex min-h-11 items-center gap-1 font-medium text-accent"
             >
-              <ChevronLeft size={18} /> Все категории · {drillCategory.name}
+              <ChevronLeft size={18} /> {t('stats.allCategories')} · {drillCategory.name}
             </button>
           )}
           {slices.length === 0 ? (
-            <EmptyState title="Нет данных за период" />
+            <EmptyState title={t('stats.noData')} />
           ) : (
             <>
               <DonutChart slices={slices} total={total} currency={currency} isDark={isDark} />
-              <ul className="mt-3 flex flex-col" aria-label="Категории">
+              <ul className="mt-3 flex flex-col" aria-label={t('nav.categories')}>
                 {slices.map((s) => {
                   const canDrill = !drill && hasChildren(s.categoryId);
                   const content = (
@@ -132,7 +142,7 @@ export function StatsScreen() {
                         <span className="block truncate">{s.name}</span>
                         <span className="tabular block text-xs text-muted">
                           {total
-                            ? `${((s.amount / total) * 100).toFixed(1).replace('.', ',')}%`
+                            ? `${((s.amount / total) * 100).toFixed(1).replace('.', numberSeparators().decimal)}%`
                             : ''}
                         </span>
                       </span>
@@ -148,7 +158,7 @@ export function StatsScreen() {
                           type="button"
                           onClick={() => setDrill(s.categoryId)}
                           className="flex min-h-12 w-full items-center gap-3 text-left"
-                          aria-label={`${s.name}: подкатегории`}
+                          aria-label={t('stats.subcategoriesAria', { name: s.name })}
                         >
                           {content}
                         </button>
@@ -165,7 +175,7 @@ export function StatsScreen() {
 
         <Card>
           <h2 className="mb-2 font-semibold">
-            {bucket === 'day' ? 'По дням' : 'По месяцам'}, {currency}
+            {bucket === 'day' ? t('stats.byDay') : t('stats.byMonth')}, {currency}
           </h2>
           <BarsChart
             series={series}
@@ -176,7 +186,7 @@ export function StatsScreen() {
           />
           <details className="mt-2">
             <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium text-accent">
-              Показать таблицей
+              {t('stats.showTable')}
             </summary>
             <SeriesTable
               series={series}
@@ -204,6 +214,7 @@ function CompareCard({
   currency: string;
   higherIsBad?: boolean;
 }) {
+  const t = useT();
   const pct = changePercent(value, prev);
   const up = pct !== null && pct > 0;
   const bad = pct !== null && pct !== 0 && up === higherIsBad;
@@ -217,8 +228,10 @@ function CompareCard({
       >
         {pct !== null && pct !== 0 && <Arrow size={14} aria-hidden="true" />}
         {pct === null
-          ? 'нет данных за прошлый период'
-          : `${pct > 0 ? '+' : ''}${String(pct).replace('.', ',')}% к прошлому периоду`}
+          ? t('stats.noPrevData')
+          : t('stats.vsPrev', {
+              pct: `${pct > 0 ? '+' : ''}${String(pct).replace('.', numberSeparators().decimal)}`,
+            })}
       </div>
     </Card>
   );
@@ -235,6 +248,7 @@ function DonutChart({
   currency: string;
   isDark: boolean;
 }) {
+  const t = useT();
   const config = useMemo((): ChartConfiguration<'doughnut'> => {
     const folded = foldSmallSlices(slices);
     const surface = cssVar('--app-surface') || (isDark ? '#151c1a' : '#ffffff');
@@ -254,7 +268,7 @@ function DonutChart({
       },
       options: {
         maintainAspectRatio: false,
-        locale: 'ru-RU',
+        locale: intlLocale(),
         cutout: '68%',
         animation: false,
         plugins: {
@@ -273,19 +287,20 @@ function DonutChart({
     <div className="relative mt-3">
       <ChartCanvas
         config={config}
-        label={`Диаграмма по категориям, всего ${formatMoney(total, currency)}`}
+        label={t('stats.donutAria', { amount: formatMoney(total, currency) })}
       />
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-xs text-muted">Всего</span>
+        <span className="text-xs text-muted">{t('stats.total')}</span>
         <span className="tabular text-lg font-bold">{formatMoney(total, currency)}</span>
       </div>
     </div>
   );
 }
 
-function bucketLabel(key: string, bucket: 'day' | 'month', timeZone: string, pattern?: string) {
+function bucketLabel(key: string, bucket: 'day' | 'month', timeZone: string, style?: DateStyle) {
   const ts = startOfDayKey(bucket === 'day' ? key : `${key}-01`, timeZone) + 12 * 3600_000;
-  return formatInTz(ts, timeZone, pattern ?? (bucket === 'day' ? 'd' : 'LLL'));
+  if (style) return formatDate(ts, timeZone, style);
+  return formatInTz(ts, timeZone, bucket === 'day' ? 'd' : 'LLL');
 }
 
 function BarsChart({
@@ -301,6 +316,7 @@ function BarsChart({
   isDark: boolean;
   timeZone: string;
 }) {
+  const t = useT();
   const config = useMemo((): ChartConfiguration<'bar'> => {
     const digits = fractionDigits(currency);
     const grid = cssVar('--app-border') || (isDark ? '#2e3a37' : '#d3dbd8');
@@ -312,7 +328,7 @@ function BarsChart({
         labels: series.map((p) => bucketLabel(p.key, bucket, timeZone)),
         datasets: [
           {
-            label: 'Доходы',
+            label: t('common.incomes'),
             data: series.map((p) => toUnits(p.income)),
             backgroundColor: cssVar('--chart-income'),
             borderRadius: 4,
@@ -320,7 +336,7 @@ function BarsChart({
             maxBarThickness: 18,
           },
           {
-            label: 'Расходы',
+            label: t('common.expenses'),
             data: series.map((p) => toUnits(p.expense)),
             backgroundColor: cssVar('--chart-expense'),
             borderRadius: 4,
@@ -331,7 +347,7 @@ function BarsChart({
       },
       options: {
         maintainAspectRatio: false,
-        locale: 'ru-RU',
+        locale: intlLocale(),
         animation: false,
         interaction: { mode: 'index', intersect: false },
         scales: {
@@ -354,7 +370,7 @@ function BarsChart({
                   series[items[0].dataIndex].key,
                   bucket,
                   timeZone,
-                  bucket === 'day' ? 'd MMMM' : 'LLLL yyyy',
+                  bucket === 'day' ? 'dayMonth' : 'monthYear',
                 ),
               label: (ctx) => {
                 const p = series[ctx.dataIndex];
@@ -366,21 +382,21 @@ function BarsChart({
         },
       },
     };
-  }, [series, bucket, currency, isDark, timeZone]);
+  }, [series, bucket, currency, isDark, timeZone, t]);
 
   return (
     <>
       <div className="mb-2 flex gap-4 text-sm" aria-hidden="true">
         <span className="flex items-center gap-1.5">
           <span className="h-3 w-3 rounded-sm" style={{ background: 'var(--chart-income)' }} />{' '}
-          Доходы
+          {t('common.incomes')}
         </span>
         <span className="flex items-center gap-1.5">
           <span className="h-3 w-3 rounded-sm" style={{ background: 'var(--chart-expense)' }} />{' '}
-          Расходы
+          {t('common.expenses')}
         </span>
       </div>
-      <ChartCanvas config={config} label="Столбчатая диаграмма доходов и расходов" />
+      <ChartCanvas config={config} label={t('stats.barsAria')} />
     </>
   );
 }
@@ -396,23 +412,26 @@ function SeriesTable({
   currency: string;
   timeZone: string;
 }) {
+  const t = useT();
   const digits = fractionDigits(currency);
   const rows = series.filter((p) => p.income || p.expense);
-  if (rows.length === 0) return <p className="text-sm text-muted">Нет операций.</p>;
+  if (rows.length === 0) return <p className="text-sm text-muted">{t('stats.noTransactions')}</p>;
   return (
     <table className="tabular w-full text-sm">
       <thead>
         <tr className="text-left text-muted">
-          <th className="py-1 font-medium">{bucket === 'day' ? 'День' : 'Месяц'}</th>
-          <th className="py-1 text-right font-medium">Доходы</th>
-          <th className="py-1 text-right font-medium">Расходы</th>
+          <th className="py-1 font-medium">
+            {bucket === 'day' ? t('period.day') : t('period.month')}
+          </th>
+          <th className="py-1 text-right font-medium">{t('common.incomes')}</th>
+          <th className="py-1 text-right font-medium">{t('common.expenses')}</th>
         </tr>
       </thead>
       <tbody>
         {rows.map((p) => (
           <tr key={p.key} className="border-t border-border">
             <td className="py-1.5">
-              {bucketLabel(p.key, bucket, timeZone, bucket === 'day' ? 'd MMM' : 'LLLL yyyy')}
+              {bucketLabel(p.key, bucket, timeZone, bucket === 'day' ? 'dayShort' : 'monthYear')}
             </td>
             <td className="py-1.5 text-right">
               {formatMinor(p.income, digits, { trimZeros: true })}

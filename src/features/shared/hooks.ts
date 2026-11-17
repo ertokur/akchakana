@@ -3,6 +3,7 @@ import { computeBalances } from '../../domain/balances';
 import { customPeriod, periodFor, type Period, type PeriodOptions } from '../../domain/dates';
 import type { Account, Category, Id } from '../../domain/types';
 import { useData } from '../../stores/dataStore';
+import { t } from '../../i18n';
 import { useUi, type PeriodSelection } from '../../stores/uiStore';
 
 export function usePeriodOptions(): PeriodOptions {
@@ -45,7 +46,7 @@ export function useBalances(): Map<Id, number> {
 
 /** Полное имя категории: «Транспорт / Такси» для подкатегории. */
 export function categoryTitle(c: Category | undefined, byId: Map<Id, Category>): string {
-  if (!c) return 'Без категории';
+  if (!c) return t('common.noCategory');
   const parent = c.parentId ? byId.get(c.parentId) : undefined;
   return parent ? `${parent.name} / ${c.name}` : c.name;
 }

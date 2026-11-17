@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useUi } from '../../stores/uiStore';
 import { runScheduler } from './scheduler';
+import { t } from '../../i18n';
 
 /** Запускает обработку повторов при старте, при возврате в приложение и раз в минуту. */
 export function useScheduler(enabled: boolean): void {
@@ -13,7 +14,7 @@ export function useScheduler(enabled: boolean): void {
       try {
         const created = await runScheduler();
         if (created > 0) {
-          useUi.getState().toast({ text: `Добавлено регулярных операций: ${created}` });
+          useUi.getState().toast({ text: t('recurring.autoAdded', { count: created }) });
         }
       } finally {
         running = false;

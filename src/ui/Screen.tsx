@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { IconButton } from './controls';
+import { useT } from '../i18n';
 
 /** Каркас экрана: шапка с учётом выреза (notch) и прокручиваемое содержимое над нижней навигацией. */
 export function Screen({
@@ -16,12 +17,13 @@ export function Screen({
   header?: ReactNode;
   children: ReactNode;
 }) {
+  const t = useT();
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="pt-safe pl-safe pr-safe sticky top-0 z-20 border-b border-border bg-bg/95 backdrop-blur">
         <div className="mx-auto flex min-h-14 max-w-lg items-center gap-1 px-2 py-1">
           {onBack ? (
-            <IconButton label="Назад" onClick={onBack}>
+            <IconButton label={t('common.back')} onClick={onBack}>
               <ChevronLeft />
             </IconButton>
           ) : (

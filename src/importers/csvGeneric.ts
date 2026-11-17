@@ -4,6 +4,7 @@ import { fromZonedTime } from 'date-fns-tz';
 import { PALETTE } from '../db/seed';
 import { newId } from '../domain/ids';
 import { fractionDigits, tryParseMinor } from '../domain/money';
+import { t as tr } from '../i18n';
 import type {
   Account,
   Category,
@@ -27,17 +28,22 @@ export type CsvField =
   | 'type'
   | 'ignore';
 
-export const CSV_FIELD_LABELS: Record<CsvField, string> = {
-  date: 'Дата',
-  amount: 'Сумма',
-  currency: 'Валюта',
-  category: 'Категория',
-  account: 'Счёт',
-  toAccount: 'Счёт-получатель',
-  note: 'Заметка',
-  type: 'Тип',
-  ignore: 'Не импортировать',
-};
+export const CSV_FIELDS: CsvField[] = [
+  'date',
+  'amount',
+  'currency',
+  'category',
+  'account',
+  'toAccount',
+  'note',
+  'type',
+  'ignore',
+];
+
+/** Подпись поля CSV на текущем языке. */
+export function csvFieldLabel(field: CsvField): string {
+  return tr(`import.field.${field}`);
+}
 
 export interface ParsedCsv {
   headers: string[];
@@ -167,11 +173,18 @@ export function analyzeCsv(
     type: col('type'),
   };
   if (idx.date < 0 || idx.amount < 0) {
-    plan.errors.push({ message: 'Нужно сопоставить хотя бы колонки «Дата» и «Сумма»' });
+    plan.errors.push({
+      message: tr('import.err.needDateAmount', {
+        date: csvFieldLabel('date'),
+        amount: csvFieldLabel('amount'),
+      }),
+    });
     return { plan, missingAccounts: [], missingCategories: [] };
   }
   if (idx.account < 0 && !options.defaultAccountId) {
-    plan.errors.push({ message: 'Выберите счёт для операций или колонку «Счёт»' });
+    plan.errors.push({
+      message: tr('import.err.needAccount', { account: csvFieldLabel('account') }),
+    });
     return { plan, missingAccounts: [], missingCategories: [] };
   }
 
@@ -260,33 +273,37 @@ export function analyzeCsv(
     const fail = (message: string) => plan.errors.push({ row: line, message });
 
     const date = parseCsvDate(cell('date'), options.dateFormat, options.timeZone);
-    if (date === null) return fail(`неверная дата «${cell('date')}»`);
+    if (date === null) return fail(tr('import.err.badDate', { value: cell('date') }));
 
     const accountName = cell('account');
     let currency = cell('currency').toUpperCase() || undefined;
     let account: Account | null | undefined = defaultAccount;
     if (accountName) {
       account = resolveAccount(accountName, currency ?? options.defaultCurrency);
-      if (!account) return fail(`счёт «${accountName}» не найден`);
+      if (!account) return fail(tr('import.err.accountNotFound', { name: accountName }));
     }
-    if (!account) return fail('не указан счёт');
+    if (!account) return fail(tr('import.err.noAccount'));
     currency ??= account.currency;
     if (currency !== account.currency) {
       return fail(
-        `валюта ${currency} не совпадает с валютой счёта «${account.name}» (${account.currency})`,
+        tr('import.err.currencyMismatch', {
+          currency,
+          name: account.name,
+          accountCurrency: account.currency,
+        }),
       );
     }
 
     const raw = tryParseMinor(cell('amount'), fractionDigits(currency));
-    if (raw === null) return fail(`неверная сумма «${cell('amount')}»`);
-    if (raw === 0) return fail('нулевая сумма');
+    if (raw === null) return fail(tr('import.err.badAmount', { value: cell('amount') }));
+    if (raw === 0) return fail(tr('import.err.zeroAmount'));
 
     let type: TransactionType;
     let amount = raw;
     const typeCell = cell('type');
     if (typeCell) {
       const parsed = parseType(typeCell);
-      if (!parsed) return fail(`неизвестный тип операции «${typeCell}»`);
+      if (!parsed) return fail(tr('import.err.unknownType', { value: typeCell }));
       type = parsed;
       // Тип указан явно — знак суммы не важен (банки часто пишут расходы со знаком минус).
       amount = Math.abs(amount);
@@ -299,15 +316,15 @@ export function analyzeCsv(
     let categoryId: Id | undefined;
     if (type === 'transfer') {
       const targetName = cell('toAccount');
-      if (!targetName) return fail('у перевода нет счёта-получателя');
+      if (!targetName) return fail(tr('import.err.noTarget'));
       const target = resolveAccount(targetName, currency);
-      if (!target) return fail(`счёт «${targetName}» не найден`);
-      if (target.id === account.id) return fail('перевод на тот же счёт');
+      if (!target) return fail(tr('import.err.accountNotFound', { name: targetName }));
+      if (target.id === account.id) return fail(tr('import.err.sameAccount'));
       toAccountId = target.id;
       amount = Math.abs(amount);
     } else if (cell('category')) {
       const category = resolveCategory(cell('category'), type);
-      if (!category) return fail(`категория «${cell('category')}» не найдена`);
+      if (!category) return fail(tr('import.err.categoryNotFound', { name: cell('category') }));
       categoryId = category.id;
     }
 

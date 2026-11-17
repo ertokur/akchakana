@@ -10,12 +10,14 @@ import { useRoute, type Route } from './router';
 import { useTheme } from './useTheme';
 import { SCREENS } from './screens';
 import { useScheduler } from '../features/recurring/useScheduler';
+import { useT } from '../i18n';
 
 export function App() {
   const loaded = useData((s) => s.loaded);
   const load = useData((s) => s.load);
   const settings = useData((s) => s.settings);
   const route = useRoute();
+  const t = useT();
   useTheme(settings.theme);
   useScheduler(loaded && settings.onboarded);
 
@@ -26,7 +28,7 @@ export function App() {
   if (!loaded) {
     return (
       <div className="flex min-h-dvh items-center justify-center text-muted" role="status">
-        Загрузка…
+        {t('common.loading')}
       </div>
     );
   }
@@ -46,7 +48,7 @@ export function App() {
       <Suspense
         fallback={
           <div className="flex min-h-dvh items-center justify-center text-muted" role="status">
-            Загрузка…
+            {t('common.loading')}
           </div>
         }
       >
