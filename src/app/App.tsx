@@ -1,6 +1,6 @@
 import { Suspense, useEffect, type ReactNode } from 'react';
 import { useData } from '../stores/dataStore';
-import { TransactionsScreen } from '../features/transactions/TransactionsScreen';
+import { HomeScreen } from '../features/home/HomeScreen';
 import { TransactionSheet } from '../features/editor/TransactionSheet';
 import { OnboardingScreen } from '../features/onboarding/OnboardingScreen';
 import { Toasts } from '../ui/Toasts';
@@ -60,7 +60,6 @@ export function App() {
 }
 
 function renderRoute(route: Route): ReactNode {
-  if (route === 'transactions') return <TransactionsScreen />;
   const Screen = SCREENS[route];
-  return Screen ? <Screen /> : <TransactionsScreen />;
+  return Screen ? <Screen /> : <HomeScreen />;
 }

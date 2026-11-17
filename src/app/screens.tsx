@@ -6,6 +6,8 @@ import { MoreScreen } from '../features/more/MoreScreen';
 import { BudgetsScreen } from '../features/budgets/BudgetsScreen';
 import { RecurringScreen } from '../features/recurring/RecurringScreen';
 import { SettingsScreen } from '../features/settings/SettingsScreen';
+import { HomeScreen } from '../features/home/HomeScreen';
+import { TransactionsScreen } from '../features/transactions/TransactionsScreen';
 
 // Тяжёлые экраны (Chart.js, sql.js) грузятся отдельными чанками по требованию.
 const ImportScreen = lazy(() =>
@@ -18,8 +20,10 @@ const StatsScreen = lazy(() =>
   import('../features/stats/StatsScreen').then((m) => ({ default: m.StatsScreen })),
 );
 
-/** Экраны по маршрутам (кроме «Операций»). */
-export const SCREENS: Partial<Record<Route, ComponentType>> = {
+/** Экраны по маршрутам. */
+export const SCREENS: Record<Route, ComponentType> = {
+  home: HomeScreen,
+  transactions: TransactionsScreen,
   accounts: AccountsScreen,
   debts: AccountsScreen,
   stats: StatsScreen,

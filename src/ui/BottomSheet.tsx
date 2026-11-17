@@ -1,10 +1,22 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { IconButton } from './controls';
 
-/** Стек открытых шторок: Escape закрывает только верхнюю. */
-const sheetStack: symbol[] = [];
+/**
+ * Открытые шторки. Escape закрывает только верхнюю. Вложенная шторка монтируется раньше
+ * родительской, поэтому «верхняя» определяется глубиной вложенности, а не порядком открытия.
+ */
+const sheetStack: { token: symbol; depth: number }[] = [];
+const SheetDepth = createContext(0);
+
+function isTop(token: symbol): boolean {
+  const top = sheetStack.reduce<(typeof sheetStack)[number] | undefined>(
+    (best, s) => (!best || s.depth >= best.depth ? s : best),
+    undefined,
+  );
+  return top?.token === token;
+}
 
 /**
  * Нижняя шторка. Закрывается кнопкой, Escape, тапом по фону и свайпом вниз за «ручку».
@@ -29,6 +41,7 @@ export function BottomSheet({
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ startY: number; dy: number } | null>(null);
+  const depth = useContext(SheetDepth);
   const onCloseRef = useRef(onClose);
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -38,23 +51,26 @@ export function BottomSheet({
     if (!open) return;
     const previous = document.activeElement as HTMLElement | null;
     const token = Symbol('sheet');
-    sheetStack.push(token);
+    sheetStack.push({ token, depth });
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && sheetStack[sheetStack.length - 1] === token) {
+      if (e.key === 'Escape' && isTop(token)) {
         onCloseRef.current();
       }
     };
     document.addEventListener('keydown', onKey);
     const overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    panelRef.current?.focus();
+    if (isTop(token)) panelRef.current?.focus();
     return () => {
       document.removeEventListener('keydown', onKey);
-      sheetStack.splice(sheetStack.indexOf(token), 1);
+      sheetStack.splice(
+        sheetStack.findIndex((s) => s.token === token),
+        1,
+      );
       document.body.style.overflow = overflow;
       previous?.focus?.();
     };
-  }, [open]);
+  }, [open, depth]);
 
   if (!open) return null;
 
@@ -107,9 +123,13 @@ export function BottomSheet({
           </IconButton>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">
-          {children}
+          <SheetDepth.Provider value={depth + 1}>{children}</SheetDepth.Provider>
         </div>
-        {footer && <div className="border-t border-border px-4 py-3">{footer}</div>}
+        {footer && (
+          <div className="border-t border-border px-4 py-3">
+            <SheetDepth.Provider value={depth + 1}>{footer}</SheetDepth.Provider>
+          </div>
+        )}
       </div>
     </div>,
     document.body,

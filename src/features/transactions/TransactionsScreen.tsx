@@ -4,13 +4,14 @@ import { summarize } from '../../domain/balances';
 import { dayHeading } from '../../domain/dates';
 import { formatMoney } from '../../domain/money';
 import type { Transaction } from '../../domain/types';
-import { byOrder, useData } from '../../stores/dataStore';
+import { useData } from '../../stores/dataStore';
 import { useUi } from '../../stores/uiStore';
-import { Button, EmptyState, Select } from '../../ui/controls';
+import { Button, EmptyState } from '../../ui/controls';
 import { Screen } from '../../ui/Screen';
 import { useLookups, useNow, usePeriod } from '../shared/hooks';
 import { filterTransactions, groupByDay } from './grouping';
 import { PeriodSwitcher } from './PeriodSwitcher';
+import { AccountSelector } from '../shared/AccountSelector';
 import { TransactionRow } from './TransactionRow';
 import { ExportReminder } from '../importExport/ExportReminder';
 import { RecurringDue } from '../recurring/RecurringDue';
@@ -23,7 +24,6 @@ export function TransactionsScreen() {
   const deleteTransaction = useData((s) => s.deleteTransaction);
   const { accountsById, categoriesById } = useLookups();
   const accountFilter = useUi((s) => s.accountFilter);
-  const setAccountFilter = useUi((s) => s.setAccountFilter);
   const openNew = useUi((s) => s.openNew);
   const openEdit = useUi((s) => s.openEdit);
   const toast = useUi((s) => s.toast);
@@ -59,33 +59,17 @@ export function TransactionsScreen() {
     [deleteTransaction, saveTransaction, toast],
   );
 
-  const activeAccounts = useMemo(
-    () => accounts.filter((a) => !a.archived).sort(byOrder),
-    [accounts],
-  );
   const now = useNow();
 
   return (
     <Screen
       title="Операции"
-      actions={
-        accounts.length > 1 ? (
-          <Select
-            aria-label="Фильтр по счёту"
-            className="max-w-[45%] min-w-0 text-sm"
-            value={accountFilter}
-            onChange={(e) => setAccountFilter(e.target.value)}
-          >
-            <option value="all">Все счета</option>
-            {activeAccounts.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
-          </Select>
-        ) : null
+      header={
+        <div className="flex flex-col">
+          <AccountSelector />
+          <PeriodSwitcher />
+        </div>
       }
-      header={<PeriodSwitcher />}
     >
       <ExportReminder />
       <RecurringDue />

@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 
 /** Минимальный hash-роутер: `#/accounts`, `#/settings/import` и т. п. Работает офлайн без настройки сервера. */
 export type Route =
+  | 'home'
   | 'transactions'
   | 'accounts'
   | 'stats'
@@ -15,8 +16,9 @@ export type Route =
   | 'export';
 
 const ROUTES: Record<string, Route> = {
-  '': 'transactions',
-  '/': 'transactions',
+  '': 'home',
+  '/': 'home',
+  '/transactions': 'transactions',
   '/accounts': 'accounts',
   '/stats': 'stats',
   '/budgets': 'budgets',
@@ -30,7 +32,8 @@ const ROUTES: Record<string, Route> = {
 };
 
 export const PATHS: Record<Route, string> = {
-  transactions: '/',
+  home: '/',
+  transactions: '/transactions',
   accounts: '/accounts',
   stats: '/stats',
   budgets: '/budgets',
@@ -44,7 +47,7 @@ export const PATHS: Record<Route, string> = {
 };
 
 export function parseRoute(hash: string): Route {
-  return ROUTES[hash.replace(/^#/, '').replace(/\/$/, '') || '/'] ?? 'transactions';
+  return ROUTES[hash.replace(/^#/, '').replace(/\/$/, '') || '/'] ?? 'home';
 }
 
 function subscribe(cb: () => void) {

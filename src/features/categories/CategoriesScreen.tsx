@@ -3,7 +3,9 @@ import { ArrowDown, ArrowUp, GripVertical, Plus } from 'lucide-react';
 import { categoryTree, moveCategory, siblingsOf } from '../../domain/categories';
 import type { Category, CategoryKind } from '../../domain/types';
 import { useData } from '../../stores/dataStore';
-import { EmptyState, IconButton, SegmentedControl } from '../../ui/controls';
+import { useUi } from '../../stores/uiStore';
+import { missingDefaultSubcategories } from '../../db/seed';
+import { Button, EmptyState, IconButton, SegmentedControl } from '../../ui/controls';
 import { IconBadge } from '../../ui/Icon';
 import { Screen } from '../../ui/Screen';
 import { navigate } from '../../app/router';
@@ -16,6 +18,8 @@ export function CategoriesScreen() {
   const [editing, setEditing] = useState<Category | 'new' | null>(null);
 
   const tree = useMemo(() => categoryTree(categories, kind), [categories, kind]);
+  const missingSubs = useMemo(() => missingDefaultSubcategories(categories), [categories]);
+  const toast = useUi((s) => s.toast);
   const active = tree.filter((n) => !n.parent.archived);
   const archived = tree.filter((n) => n.parent.archived);
 
@@ -74,8 +78,20 @@ export function CategoriesScreen() {
               </ul>
             </details>
           )}
+          {kind === 'expense' && missingSubs.length > 0 && (
+            <Button
+              variant="secondary"
+              onClick={async () => {
+                await saveCategories(missingSubs);
+                toast({ text: `Добавлено подкатегорий: ${missingSubs.length}` });
+              }}
+            >
+              Добавить стандартные подкатегории ({missingSubs.length})
+            </Button>
+          )}
           <p className="text-center text-sm text-muted">
-            Порядок меняется перетаскиванием за ручку или кнопками со стрелками.
+            Порядок меняется перетаскиванием за ручку или кнопками со стрелками. Подкатегории
+            редактируются в карточке категории.
           </p>
         </div>
       )}

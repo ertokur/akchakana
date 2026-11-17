@@ -13,7 +13,8 @@ export function CategoryGrid({
   categories: Category[];
   kind: CategoryKind;
   value?: Id;
-  onChange: (id: Id) => void;
+  /** final — выбор окончательный (нет подкатегорий или выбрана подкатегория). */
+  onChange: (id: Id, final: boolean) => void;
 }) {
   const { parents, childrenOf } = useMemo(() => {
     const active = categories.filter((c) => c.kind === kind && (!c.archived || c.id === value));
@@ -50,7 +51,7 @@ export function CategoryGrid({
               type="button"
               role="radio"
               aria-checked={checked}
-              onClick={() => onChange(c.id)}
+              onClick={() => onChange(c.id, !childrenOf.get(c.id)?.length)}
               className={`flex min-h-20 flex-col items-center justify-start gap-1 rounded-xl px-1 py-2 text-center ${checked ? 'bg-accent-soft ring-2 ring-accent' : ''}`}
             >
               <IconBadge name={c.icon} color={c.color} size={40} />
@@ -67,7 +68,7 @@ export function CategoryGrid({
               type="button"
               role="radio"
               aria-checked={value === s.id}
-              onClick={() => onChange(s.id)}
+              onClick={() => onChange(s.id, true)}
               className={`min-h-11 rounded-full border px-3 text-sm ${value === s.id ? 'border-accent bg-accent-soft font-semibold' : 'border-border'}`}
             >
               {s.name}

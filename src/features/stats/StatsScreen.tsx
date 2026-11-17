@@ -14,14 +14,15 @@ import {
   type CategorySlice,
 } from '../../domain/stats';
 import type { CategoryKind, Id } from '../../domain/types';
-import { byOrder, useData } from '../../stores/dataStore';
+import { useData } from '../../stores/dataStore';
 import { useUi } from '../../stores/uiStore';
-import { Card, EmptyState, SegmentedControl, Select } from '../../ui/controls';
+import { Card, EmptyState, SegmentedControl } from '../../ui/controls';
 import { IconBadge } from '../../ui/Icon';
 import { Screen } from '../../ui/Screen';
 import { usePeriod, usePeriodOptions } from '../shared/hooks';
 import { filterTransactions } from '../transactions/grouping';
 import { PeriodSwitcher } from '../transactions/PeriodSwitcher';
+import { AccountSelector } from '../shared/AccountSelector';
 import { ChartCanvas, cssVar, useIsDark } from './ChartCanvas';
 
 export function StatsScreen() {
@@ -30,7 +31,6 @@ export function StatsScreen() {
   const categories = useData((s) => s.categories);
   const settings = useData((s) => s.settings);
   const accountFilter = useUi((s) => s.accountFilter);
-  const setAccountFilter = useUi((s) => s.setAccountFilter);
   const period = usePeriod();
   const opts = usePeriodOptions();
   const isDark = useIsDark();
@@ -70,24 +70,12 @@ export function StatsScreen() {
   return (
     <Screen
       title="Обзор"
-      actions={
-        accounts.length > 1 ? (
-          <Select
-            aria-label="Фильтр по счёту"
-            className="max-w-[45%] min-w-0 text-sm"
-            value={accountFilter}
-            onChange={(e) => setAccountFilter(e.target.value)}
-          >
-            <option value="all">Все счета</option>
-            {[...accounts].sort(byOrder).map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
-          </Select>
-        ) : null
+      header={
+        <div className="flex flex-col">
+          <AccountSelector />
+          <PeriodSwitcher />
+        </div>
       }
-      header={<PeriodSwitcher />}
     >
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-2">

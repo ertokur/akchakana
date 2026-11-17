@@ -1,25 +1,28 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { dayKey, periodLabel, shiftPeriod, type PeriodKind } from '../../domain/dates';
 import { BottomSheet } from '../../ui/BottomSheet';
-import { Button, Field, IconButton, SegmentedControl, TextInput } from '../../ui/controls';
+import { Button, Field, IconButton, TextInput } from '../../ui/controls';
 import { useUi } from '../../stores/uiStore';
 import { usePeriod, usePeriodOptions } from '../shared/hooks';
 
-const KINDS: { value: PeriodKind; label: string }[] = [
+const KINDS: { value: Exclude<PeriodKind, 'custom'>; label: string }[] = [
   { value: 'day', label: 'День' },
   { value: 'week', label: 'Неделя' },
   { value: 'month', label: 'Месяц' },
   { value: 'year', label: 'Год' },
-  { value: 'custom', label: 'Период' },
 ];
 
+/**
+ * Компактный переключатель периода, как в 1Money: стрелки листают период,
+ * нажатие на подпись открывает выбор (день, неделя, месяц, год или свои даты).
+ */
 export function PeriodSwitcher() {
   const selection = useUi((s) => s.period);
   const setPeriod = useUi((s) => s.setPeriod);
   const period = usePeriod();
   const opts = usePeriodOptions();
-  const [customOpen, setCustomOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
 
@@ -37,78 +40,97 @@ export function PeriodSwitcher() {
     }
   };
 
-  const openCustom = () => {
+  const openPicker = () => {
     setFrom(selection.from ?? dayKey(period.start, opts.timeZone));
     setTo(selection.to ?? dayKey(period.end - 1, opts.timeZone));
-    setCustomOpen(true);
+    setOpen(true);
   };
 
+  const label = periodLabel(period, opts.timeZone);
+
   return (
-    <div className="flex flex-col gap-2">
-      <SegmentedControl
-        label="Период"
-        size="sm"
-        value={selection.kind}
-        options={KINDS}
-        onChange={(kind) => {
-          if (kind === 'custom') openCustom();
-          else setPeriod({ kind, anchor: Math.min(Date.now(), period.end - 1) });
-        }}
-      />
-      <div className="flex items-center justify-between">
-        <IconButton label="Предыдущий период" onClick={() => shift(-1)}>
-          <ChevronLeft />
-        </IconButton>
-        <button
-          type="button"
-          className="min-h-11 flex-1 rounded-lg font-semibold first-letter:uppercase"
-          onClick={() =>
-            selection.kind === 'custom'
-              ? openCustom()
-              : setPeriod({ kind: selection.kind, anchor: Date.now() })
-          }
-          aria-label={`Текущий период: ${periodLabel(period, opts.timeZone)}. Вернуться к сегодняшнему`}
-        >
-          <span className="inline-block first-letter:uppercase">
-            {periodLabel(period, opts.timeZone)}
-          </span>
-        </button>
-        <IconButton label="Следующий период" onClick={() => shift(1)}>
-          <ChevronRight />
-        </IconButton>
-      </div>
-      <BottomSheet
-        open={customOpen}
-        onClose={() => setCustomOpen(false)}
-        title="Произвольный период"
+    <div className="flex items-center justify-between">
+      <IconButton label="Предыдущий период" onClick={() => shift(-1)}>
+        <ChevronLeft />
+      </IconButton>
+      <button
+        type="button"
+        className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg font-semibold"
+        onClick={openPicker}
+        aria-label={`Период: ${label}. Выбрать период`}
       >
-        <div className="flex flex-col gap-3">
-          <Field label="С">
-            {(id) => (
-              <TextInput
-                id={id}
-                type="date"
-                value={from}
-                onChange={(e) => setFrom(e.target.value)}
-              />
-            )}
-          </Field>
-          <Field label="По">
-            {(id) => (
-              <TextInput id={id} type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-            )}
-          </Field>
+        <CalendarDays size={18} className="text-accent" aria-hidden="true" />
+        <span className="first-letter:uppercase">{label}</span>
+      </button>
+      <IconButton label="Следующий период" onClick={() => shift(1)}>
+        <ChevronRight />
+      </IconButton>
+      <BottomSheet open={open} onClose={() => setOpen(false)} title="Период">
+        <div className="flex flex-col gap-4">
+          <div role="radiogroup" aria-label="Длина периода" className="grid grid-cols-2 gap-2">
+            {KINDS.map((k) => (
+              <button
+                key={k.value}
+                type="button"
+                role="radio"
+                aria-checked={selection.kind === k.value}
+                onClick={() => {
+                  setPeriod({ kind: k.value, anchor: Math.min(Date.now(), period.end - 1) });
+                  setOpen(false);
+                }}
+                className={`min-h-12 rounded-xl font-medium ${selection.kind === k.value ? 'bg-accent text-accent-fg' : 'bg-surface-2'}`}
+              >
+                {k.label}
+              </button>
+            ))}
+          </div>
           <Button
-            block
-            disabled={!from || !to}
+            variant="secondary"
             onClick={() => {
-              const [a, b] = from <= to ? [from, to] : [to, from];
-              setPeriod({ kind: 'custom', anchor: Date.now(), from: a, to: b });
-              setCustomOpen(false);
+              setPeriod({
+                kind: selection.kind === 'custom' ? 'month' : selection.kind,
+                anchor: Date.now(),
+              });
+              setOpen(false);
             }}
           >
-            Показать
+            Сегодня
           </Button>
+          <div className="flex flex-col gap-3 rounded-2xl border border-border p-3">
+            <span className="font-medium">Свои даты</span>
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="С">
+                {(id) => (
+                  <TextInput
+                    id={id}
+                    type="date"
+                    value={from}
+                    onChange={(e) => setFrom(e.target.value)}
+                  />
+                )}
+              </Field>
+              <Field label="По">
+                {(id) => (
+                  <TextInput
+                    id={id}
+                    type="date"
+                    value={to}
+                    onChange={(e) => setTo(e.target.value)}
+                  />
+                )}
+              </Field>
+            </div>
+            <Button
+              disabled={!from || !to}
+              onClick={() => {
+                const [a, b] = from <= to ? [from, to] : [to, from];
+                setPeriod({ kind: 'custom', anchor: Date.now(), from: a, to: b });
+                setOpen(false);
+              }}
+            >
+              Показать
+            </Button>
+          </div>
         </div>
       </BottomSheet>
     </div>

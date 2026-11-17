@@ -62,7 +62,7 @@ describe('экран импорта', () => {
     await user.click(screen.getByRole('button', { name: 'Импортировать' }));
     await waitFor(() => expect(useData.getState().transactions).toHaveLength(2));
     expect((await repos.settings.get()).onboarded).toBe(true);
-    expect(await screen.findByRole('heading', { name: 'Операции' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Категории' })).toBeInTheDocument();
   });
 
   it('сообщает о непонятном файле', async () => {

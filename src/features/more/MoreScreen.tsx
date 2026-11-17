@@ -1,8 +1,18 @@
-import { ChevronRight, Download, HandCoins, Repeat, Settings, Shapes, Upload } from 'lucide-react';
+import {
+  ChevronRight,
+  Download,
+  HandCoins,
+  Repeat,
+  Settings,
+  Shapes,
+  Target,
+  Upload,
+} from 'lucide-react';
 import { navigate, type Route } from '../../app/router';
 import { Screen } from '../../ui/Screen';
 
 const ITEMS: { route: Route; label: string; hint: string; icon: typeof Shapes }[] = [
+  { route: 'budgets', label: 'Бюджеты', hint: 'Лимиты на месяц', icon: Target },
   { route: 'categories', label: 'Категории', hint: 'Порядок, подкатегории, скрытие', icon: Shapes },
   { route: 'recurring', label: 'Регулярные платежи', hint: 'Подписки и напоминания', icon: Repeat },
   { route: 'debts', label: 'Долги', hint: 'Мне должны и я должен', icon: HandCoins },

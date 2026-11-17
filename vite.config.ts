@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import pkg from './package.json' with { type: 'json' };
 
-const THEME_COLOR = '#0b6b62';
+const THEME_COLOR = '#4f46e5';
 // Путь, по которому опубликовано приложение: '/' локально, '/akchakana/' на GitHub Pages.
 const BASE = process.env.BASE_PATH ?? '/';
 
@@ -30,7 +30,7 @@ export default defineConfig({
         scope: BASE,
         display: 'standalone',
         orientation: 'portrait',
-        background_color: '#f3f5f4',
+        background_color: '#f5f5fb',
         theme_color: THEME_COLOR,
         categories: ['finance', 'productivity'],
         icons: [

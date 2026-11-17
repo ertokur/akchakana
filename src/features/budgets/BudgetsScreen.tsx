@@ -27,6 +27,7 @@ import {
 } from '../../ui/controls';
 import { IconBadge } from '../../ui/Icon';
 import { Screen } from '../../ui/Screen';
+import { navigate } from '../../app/router';
 import { useNow } from '../shared/hooks';
 
 function shiftMonth(month: string, delta: number): string {
@@ -77,6 +78,7 @@ export function BudgetsScreen() {
   return (
     <Screen
       title="Бюджеты"
+      onBack={() => navigate('more')}
       actions={
         <IconButton label="Добавить бюджет" onClick={() => setEditing('new')}>
           <Plus />
@@ -144,7 +146,7 @@ function BudgetCard({
         <div className="flex items-center gap-3">
           <IconBadge
             name={category?.icon ?? 'wallet'}
-            color={category?.color ?? '#0b6b62'}
+            color={category?.color ?? '#4f46e5'}
             size={36}
           />
           <span className="min-w-0 flex-1 truncate font-semibold">{name}</span>

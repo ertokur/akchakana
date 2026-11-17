@@ -1,16 +1,17 @@
-import { ChartPie, Ellipsis, ListOrdered, Target, Wallet } from 'lucide-react';
-import { navigate, type Route } from './router';
+import { ChartPie, CircleDot, Ellipsis, ListOrdered, Wallet } from 'lucide-react';
+import { navigate, PATHS, type Route } from './router';
 
+// Порядок вкладок как в 1Money: счета, категории, операции, обзор.
 const ITEMS: { route: Route; label: string; icon: typeof Wallet; match: Route[] }[] = [
-  { route: 'transactions', label: 'Операции', icon: ListOrdered, match: ['transactions'] },
   { route: 'accounts', label: 'Счета', icon: Wallet, match: ['accounts', 'debts'] },
+  { route: 'home', label: 'Категории', icon: CircleDot, match: ['home'] },
+  { route: 'transactions', label: 'Операции', icon: ListOrdered, match: ['transactions'] },
   { route: 'stats', label: 'Обзор', icon: ChartPie, match: ['stats'] },
-  { route: 'budgets', label: 'Бюджеты', icon: Target, match: ['budgets'] },
   {
     route: 'more',
     label: 'Ещё',
     icon: Ellipsis,
-    match: ['more', 'categories', 'recurring', 'settings', 'import', 'export'],
+    match: ['more', 'budgets', 'categories', 'recurring', 'settings', 'import', 'export'],
   },
 ];
 
@@ -26,7 +27,7 @@ export function BottomNav({ current }: { current: Route }) {
           return (
             <li key={route} className="flex-1">
               <a
-                href={`#${route === 'transactions' ? '/' : `/${route}`}`}
+                href={`#${PATHS[route]}`}
                 onClick={(e) => {
                   e.preventDefault();
                   navigate(route);

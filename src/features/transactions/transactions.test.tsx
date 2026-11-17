@@ -62,15 +62,26 @@ describe('ввод на калькуляторе', () => {
 });
 
 describe('экран операций', () => {
+  afterEach(() => {
+    window.location.hash = '';
+  });
+
   it('добавляет расход через шторку и показывает его в списке', async () => {
     const { repos } = await setupTestRepos();
     await seedBasic(repos);
+    window.location.hash = '#/transactions';
     const user = userEvent.setup();
     render(<App />);
 
     await user.click((await screen.findAllByRole('button', { name: 'Добавить операцию' }))[0]);
     const sheet = await screen.findByRole('dialog', { name: 'Новая операция' });
-    await user.click(within(sheet).getByRole('radio', { name: 'Продукты' }));
+    // Выбор категории открывается сразу; у «Продуктов» есть подкатегории.
+    const picker = await screen.findByRole('dialog', { name: 'Категория расхода' });
+    await user.click(within(picker).getByRole('radio', { name: 'Продукты' }));
+    await user.click(within(picker).getByRole('radio', { name: 'Без подкатегории' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Категория расхода' })).not.toBeInTheDocument(),
+    );
     const keypad = screen.getByRole('group', { name: 'Калькулятор' });
     for (const k of ['1', '2', '0', 'Плюс', '3', '0']) {
       await user.click(within(keypad).getByRole('button', { name: k }));
@@ -96,9 +107,13 @@ describe('экран операций', () => {
   it('не сохраняет операцию без суммы', async () => {
     const { repos } = await setupTestRepos();
     await seedBasic(repos);
+    window.location.hash = '#/transactions';
     const user = userEvent.setup();
     render(<App />);
     await user.click((await screen.findAllByRole('button', { name: 'Добавить операцию' }))[0]);
+    await screen.findByRole('dialog', { name: 'Категория расхода' });
+    await user.keyboard('{Escape}');
+    expect(screen.getByRole('dialog', { name: 'Новая операция' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Сохранить' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Введите сумму');
     expect(await repos.transactions.getAll()).toHaveLength(0);

@@ -81,7 +81,7 @@ export function ImportScreen() {
   return (
     <Screen
       title="Импорт"
-      onBack={settings.onboarded ? () => navigate('more') : () => navigate('transactions')}
+      onBack={settings.onboarded ? () => navigate('more') : () => navigate('home')}
     >
       {step.kind === 'pick' && (
         <div className="flex flex-col gap-4">
@@ -209,7 +209,7 @@ function Confirm({
       }
       if (!settings.onboarded) await updateSettings({ onboarded: true });
       toast({ text: `Импортировано операций: ${plan.transactions.length}` });
-      navigate('transactions');
+      navigate('home');
     } catch (e) {
       toast({ text: `Импорт не выполнен: ${(e as Error).message}`, tone: 'error' });
     } finally {

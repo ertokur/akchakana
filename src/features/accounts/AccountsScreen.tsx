@@ -12,6 +12,7 @@ import { navigate, useRoute } from '../../app/router';
 import { useBalances } from '../shared/hooks';
 import { AccountForm } from './AccountForm';
 import { DebtsPanel } from './DebtsPanel';
+import { IncomeStrip } from './IncomeStrip';
 
 export function AccountsScreen() {
   const route = useRoute();
@@ -43,7 +44,10 @@ export function AccountsScreen() {
       }
     >
       {tab === 'accounts' ? (
-        <AccountsList onOpen={setEditing} />
+        <>
+          <IncomeStrip />
+          <AccountsList onOpen={setEditing} />
+        </>
       ) : (
         <DebtsPanel creating={newDebt} onCreatingChange={setNewDebt} />
       )}

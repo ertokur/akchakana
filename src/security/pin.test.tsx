@@ -37,7 +37,7 @@ describe('PIN-код', () => {
     for (const d of ['2', '5', '8', '0']) await user.click(screen.getByRole('button', { name: d }));
     await user.click(screen.getByRole('button', { name: 'Войти' }));
     await waitFor(() =>
-      expect(screen.getByRole('heading', { name: 'Операции' })).toBeInTheDocument(),
+      expect(screen.getByRole('heading', { name: 'Категории' })).toBeInTheDocument(),
     );
   });
 });

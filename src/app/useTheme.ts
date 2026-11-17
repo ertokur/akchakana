@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import type { ThemeSetting } from '../domain/types';
 
-const THEME_COLORS = { light: '#f3f5f4', dark: '#0c1110' };
+const THEME_COLORS = { light: '#f5f5fb', dark: '#0e0f1c' };
 
 /** Применяет тему к <html> и обновляет цвет системной панели (meta theme-color). */
 export function useTheme(theme: ThemeSetting): void {

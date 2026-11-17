@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { ArrowRight, Trash2 } from 'lucide-react';
 import { evaluate, hasOperator } from '../../domain/calc';
 import { fromDateTimeInput, toDateTimeInput } from '../../domain/dates';
 import { newId } from '../../domain/ids';
@@ -16,7 +16,9 @@ import { useUi, type EditorState } from '../../stores/uiStore';
 import { BottomSheet, ConfirmDialog } from '../../ui/BottomSheet';
 import { IconButton, SegmentedControl, TextInput } from '../../ui/controls';
 import { checkBudgetsAfterSave } from '../budgets/warnings';
-import { AccountPicker } from './AccountPicker';
+import { AccountPickerSheet } from './AccountPicker';
+import { FlowEndpoint } from './FlowEndpoint';
+import { useBalances } from '../shared/hooks';
 import { applyKey, CalcKeypad } from './CalcKeypad';
 import { CategoryGrid } from './CategoryGrid';
 
@@ -94,6 +96,15 @@ function EditorForm({
   const [tags, setTags] = useState((original?.tags ?? preset?.tags ?? []).join(', '));
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // Новая операция без категории сразу открывает выбор категории, как в 1Money.
+  const [picker, setPicker] = useState<'account' | 'target' | 'category' | null>(() =>
+    editor.mode === 'new' && !preset?.categoryId && editor.type !== 'transfer' ? 'category' : null,
+  );
+  const balances = useBalances();
+  const category = categories.find((c) => c.id === categoryId);
+  const parentCategory = category?.parentId
+    ? categories.find((c) => c.id === category.parentId)
+    : undefined;
 
   const amountResult = useMemo(() => {
     try {
@@ -236,6 +247,7 @@ function EditorForm({
       <div className="flex flex-col gap-3">
         <SegmentedControl
           label="Тип операции"
+          size="sm"
           value={type}
           options={TYPES}
           onChange={(v) => {
@@ -245,20 +257,58 @@ function EditorForm({
           }}
         />
 
-        <div className="flex gap-2">
-          <AccountPicker
-            label={type === 'transfer' ? 'Со счёта' : 'Счёт'}
-            accounts={sortedAccounts}
-            value={accountId}
-            onChange={setAccountId}
-          />
-          {type === 'transfer' && (
-            <AccountPicker
-              label="На счёт"
-              accounts={sortedAccounts}
-              value={toAccountId}
-              onChange={setToAccountId}
-              exclude={accountId}
+        <div className="flex items-stretch gap-2">
+          {type === 'income' ? (
+            <FlowEndpoint
+              caption="Из категории"
+              name={category?.name}
+              detail={parentCategory?.name}
+              color={category?.color}
+              icon={category?.icon}
+              onClick={() => setPicker('category')}
+            />
+          ) : (
+            <FlowEndpoint
+              caption="Со счёта"
+              name={account?.name}
+              detail={account && formatMoney(balances.get(account.id) ?? 0, account.currency)}
+              color={account?.color}
+              icon={account?.icon}
+              onClick={() => setPicker('account')}
+            />
+          )}
+          <span className="flex items-center text-muted" aria-hidden="true">
+            <ArrowRight size={20} />
+          </span>
+          {type === 'expense' ? (
+            <FlowEndpoint
+              align="right"
+              caption="В категорию"
+              name={category?.name}
+              detail={parentCategory?.name}
+              color={category?.color}
+              icon={category?.icon}
+              onClick={() => setPicker('category')}
+            />
+          ) : type === 'income' ? (
+            <FlowEndpoint
+              align="right"
+              caption="На счёт"
+              name={account?.name}
+              detail={account && formatMoney(balances.get(account.id) ?? 0, account.currency)}
+              color={account?.color}
+              icon={account?.icon}
+              onClick={() => setPicker('account')}
+            />
+          ) : (
+            <FlowEndpoint
+              align="right"
+              caption="На счёт"
+              name={target?.name}
+              detail={target && formatMoney(balances.get(target.id) ?? 0, target.currency)}
+              color={target?.color}
+              icon={target?.icon}
+              onClick={() => setPicker('target')}
             />
           )}
         </div>
@@ -296,19 +346,40 @@ function EditorForm({
           value={tags}
           onChange={(e) => setTags(e.target.value)}
         />
+      </div>
 
+      <AccountPickerSheet
+        open={picker === 'account' || picker === 'target'}
+        title={picker === 'target' || type === 'income' ? 'На счёт' : 'Со счёта'}
+        accounts={sortedAccounts}
+        value={picker === 'target' ? toAccountId : accountId}
+        exclude={picker === 'target' ? accountId : undefined}
+        onChange={(id) => {
+          if (picker === 'target') setToAccountId(id);
+          else setAccountId(id);
+          setError(null);
+        }}
+        onClose={() => setPicker(null)}
+      />
+      <BottomSheet
+        open={picker === 'category'}
+        onClose={() => setPicker(null)}
+        title={type === 'income' ? 'Категория дохода' : 'Категория расхода'}
+      >
         {type !== 'transfer' && (
           <CategoryGrid
             categories={categories}
             kind={type}
             value={categoryId}
-            onChange={(id) => {
+            onChange={(id, final) => {
               setCategoryId(id);
               setError(null);
+              // У категории с подкатегориями выбор остаётся открытым, пока не выбрана подкатегория.
+              if (final) setPicker(null);
             }}
           />
         )}
-      </div>
+      </BottomSheet>
       <ConfirmDialog
         open={confirmDelete}
         title="Удалить операцию?"

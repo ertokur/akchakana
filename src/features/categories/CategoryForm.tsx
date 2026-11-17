@@ -10,6 +10,7 @@ import { BottomSheet, ConfirmDialog } from '../../ui/BottomSheet';
 import { Button, Field, Select, TextInput, Toggle } from '../../ui/controls';
 import { DEFAULT_ICON } from '../../ui/Icon';
 import { ColorPicker, IconPicker } from '../../ui/pickers';
+import { SubcategoryEditor } from './SubcategoryEditor';
 
 export function CategoryForm({
   category,
@@ -126,6 +127,7 @@ export function CategoryForm({
             />
           )}
         </Field>
+        {category && !category.parentId && <SubcategoryEditor parent={category} />}
         <Field
           label="Родительская категория"
           hint={

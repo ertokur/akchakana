@@ -176,6 +176,7 @@ export function SettingsScreen() {
         <p className="text-center text-xs text-muted">
           Акчакана {__APP_VERSION__} · данные хранятся только на этом устройстве
         </p>
+        <p className="text-center text-sm text-muted">Made by Erbol Tokur and Claude with &lt;3</p>
       </div>
 
       {pinSheet && (
@@ -203,7 +204,7 @@ export function SettingsScreen() {
           await resetAll();
           setConfirmReset(false);
           setResetText('');
-          navigate('transactions');
+          navigate('home');
         }}
       >
         <TextInput

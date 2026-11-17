@@ -7,20 +7,21 @@
  * Пары текст/фон подобраны под контраст WCAG AA (≥ 4.5:1 для обычного текста).
  */
 :root {
-  --app-bg: #f3f5f4;
+  /* Палитра «Индиго». */
+  --app-bg: #f5f5fb;
   --app-surface: #ffffff;
-  --app-surface-2: #e9eeec;
-  --app-text: #101715;
-  --app-muted: #48534f;
-  --app-border: #d3dbd8;
-  --app-accent: #0b6b62;
-  --app-accent-strong: #08524b;
+  --app-surface-2: #ececf6;
+  --app-text: #15162b;
+  --app-muted: #55577a;
+  --app-border: #d8d9e8;
+  --app-accent: #4f46e5;
+  --app-accent-strong: #4338ca;
   --app-accent-fg: #ffffff;
-  --app-accent-soft: #d6efeb;
-  --app-income: #046c4e;
+  --app-accent-soft: #e6e5fc;
+  --app-income: #0b7a55;
   --app-expense: #b3261e;
   --app-warning: #8a5300;
-  --app-overlay: rgb(10 16 14 / 0.45);
+  --app-overlay: rgb(14 15 34 / 0.45);
   /* Пара цветов графиков проверена на различимость при дальтонизме (синий/оранжевый). */
   --chart-income: #1f6fd1;
   --chart-expense: #c2410c;
@@ -28,16 +29,16 @@
 }
 
 .dark {
-  --app-bg: #0c1110;
-  --app-surface: #151c1a;
-  --app-surface-2: #1f2926;
-  --app-text: #e7eeeb;
-  --app-muted: #a2b1ac;
-  --app-border: #2e3a37;
-  --app-accent: #3cc7b5;
-  --app-accent-strong: #6fdccd;
-  --app-accent-fg: #03201c;
-  --app-accent-soft: #123a35;
+  --app-bg: #0e0f1c;
+  --app-surface: #181a2e;
+  --app-surface-2: #23263f;
+  --app-text: #e9e9f7;
+  --app-muted: #a3a5c2;
+  --app-border: #30334f;
+  --app-accent: #8f8aff;
+  --app-accent-strong: #b3b0ff;
+  --app-accent-fg: #12103a;
+  --app-accent-soft: #28265c;
   --app-income: #4fd1a1;
   --app-expense: #ff8a80;
   --app-warning: #f2b45a;
