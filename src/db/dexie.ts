@@ -1,6 +1,7 @@
 import Dexie, { type Table } from 'dexie';
 import type {
   Account,
+  BackupSnapshot,
   Budget,
   Category,
   Debt,
@@ -31,6 +32,15 @@ export const SCHEMA_V2 = {
   transactions: `${SCHEMA_V1.transactions}, *tags`,
 };
 
+/**
+ * v3: внутренние резервные копии. Таблица не входит в DB_TABLES: сброс данных и импорт её
+ * не трогают, поэтому после ошибочного сброса копию ещё можно выгрузить.
+ */
+export const SCHEMA_V3 = {
+  ...SCHEMA_V2,
+  backups: 'id, createdAt',
+};
+
 export class AppDb extends Dexie {
   accounts!: Table<Account, string>;
   categories!: Table<Category, string>;
@@ -39,6 +49,7 @@ export class AppDb extends Dexie {
   recurring!: Table<RecurringRule, string>;
   debts!: Table<Debt, string>;
   settings!: Table<Settings, string>;
+  backups!: Table<BackupSnapshot, string>;
 
   constructor(name = DB_NAME) {
     super(name);
@@ -54,6 +65,7 @@ export class AppDb extends Dexie {
             if (typeof t.isRefund !== 'boolean') t.isRefund = (t.amount ?? 0) < 0;
           }),
       );
+    this.version(3).stores(SCHEMA_V3);
   }
 }
 

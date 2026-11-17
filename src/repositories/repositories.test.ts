@@ -1,5 +1,5 @@
 import Dexie from 'dexie';
-import { AppDb, SCHEMA_V1 } from '../db/dexie';
+import { AppDb, SCHEMA_V1, SCHEMA_V2 } from '../db/dexie';
 import { defaultCategories, makeAccount } from '../db/seed';
 import type { Transaction } from '../domain/types';
 import { createDexieRepositories } from './dexieRepositories';
@@ -112,7 +112,44 @@ describe('миграции схемы', () => {
       [[], false],
       [[], true],
     ]);
-    expect(db.verno).toBe(2);
+    expect(db.verno).toBe(3);
+    await db.delete();
+  });
+
+  it('v2 → v3 сохраняет данные и добавляет таблицу резервных копий', async () => {
+    const name = uniqueName();
+    const v2 = new Dexie(name);
+    v2.version(1).stores(SCHEMA_V1);
+    v2.version(2).stores(SCHEMA_V2);
+    await v2.table('settings').put({ id: 'settings', onboarded: true, lastExportAt: 7 });
+    v2.close();
+
+    const db = new AppDb(name);
+    const repos = createDexieRepositories(db);
+    const settings = await repos.settings.get();
+    expect(settings.onboarded).toBe(true);
+    expect(settings.lastExportAt).toBe(7);
+    // Новые поля получают значения по умолчанию.
+    expect(settings.autoBackupEnabled).toBe(true);
+    expect(settings.autoBackupFrequency).toBe('weekly');
+    expect(await repos.backups.list()).toEqual([]);
+    expect(db.verno).toBe(3);
+    await db.delete();
+  });
+
+  it('сброс данных не удаляет внутренние резервные копии', async () => {
+    const db = new AppDb(uniqueName());
+    const repos = createDexieRepositories(db);
+    await repos.backups.put({
+      id: 'b1',
+      createdAt: 1,
+      fileName: 'akchakana-backup-2026-01-01.csv',
+      content: 'x',
+      size: 1,
+      transactions: 0,
+    });
+    await repos.clearAll();
+    expect(await repos.backups.list()).toHaveLength(1);
     await db.delete();
   });
 });

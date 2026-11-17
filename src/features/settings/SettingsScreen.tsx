@@ -19,6 +19,7 @@ import {
   Toggle,
 } from '../../ui/controls';
 import { Screen } from '../../ui/Screen';
+import { AutoBackupSettings } from '../backup/AutoBackupSettings';
 import { notificationsSupported, requestNotificationPermission } from '../recurring/notifications';
 
 const FALLBACK_ZONES = [
@@ -151,6 +152,8 @@ export function SettingsScreen() {
           )}
         </Card>
 
+        <AutoBackupSettings />
+
         <Card className="flex flex-col">
           <h2 className="mb-1 font-semibold">Данные</h2>
           <LinkRow icon={<Upload size={18} />} label="Импорт" onClick={() => navigate('import')} />
@@ -164,7 +167,7 @@ export function SettingsScreen() {
             <span>
               {storage.persisted
                 ? 'Браузер обещал не удалять данные автоматически.'
-                : 'Браузер может удалить данные при нехватке места. Регулярно делайте экспорт.'}
+                : 'Браузер может удалить данные при нехватке места. Регулярно сохраняйте резервную копию.'}
               {storage.usage && ` Занято: ${storage.usage}.`}
             </span>
           </div>

@@ -2,6 +2,7 @@ import { DatabaseBackup } from 'lucide-react';
 import { navigate } from '../../app/router';
 import { useData } from '../../stores/dataStore';
 import { Button } from '../../ui/controls';
+import { BackupBanner } from '../backup/BackupBanner';
 import { useNow } from '../shared/hooks';
 
 const MONTH_MS = 30 * 86_400_000;
@@ -18,7 +19,10 @@ export function shouldRemindExport(
   return since !== undefined && now - since > MONTH_MS;
 }
 
-/** Браузер может очистить IndexedDB, поэтому раз в месяц напоминаем сохранить копию. */
+/**
+ * Браузер может очистить IndexedDB, поэтому напоминаем сохранить копию. При включённом
+ * автосохранении напоминает баннер автосохранения (по его расписанию), иначе — раз в месяц.
+ */
 export function ExportReminder() {
   const settings = useData((s) => s.settings);
   const transactions = useData((s) => s.transactions);
@@ -28,6 +32,7 @@ export function ExportReminder() {
     (min, t) => (min === undefined || t.createdAt < min ? t.createdAt : min),
     undefined,
   );
+  if (settings.autoBackupEnabled) return <BackupBanner />;
   if (!shouldRemindExport(settings.lastExportAt, settings.exportSnoozedUntil, oldest, now)) {
     return null;
   }
