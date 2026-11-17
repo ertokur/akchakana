@@ -1,5 +1,7 @@
 import { AlertTriangle, CircleX } from 'lucide-react';
+import { computeBalances } from '../../domain/balances';
 import { formatInTz } from '../../domain/dates';
+import { formatMoney } from '../../domain/money';
 import { summarizePlan, type ImportPlan } from '../../importers/types';
 import { Card } from '../../ui/controls';
 
@@ -30,8 +32,26 @@ export function ImportSummary({ plan, timeZone }: { plan: ImportPlan; timeZone: 
   ]);
   rows.push(['Валюта', s.currencies.join(', ') || '—']);
 
+  const balances = computeBalances(plan.accounts, plan.transactions);
+
   return (
     <div className="flex flex-col gap-3">
+      {plan.accounts.length > 0 && (
+        <Card>
+          <h2 className="mb-2 font-semibold">Балансы счетов после импорта</h2>
+          <ul className="tabular flex flex-col gap-1" aria-label="Балансы счетов">
+            {plan.accounts.map((a) => (
+              <li key={a.id} className="flex justify-between gap-3">
+                <span className={a.archived ? 'text-muted' : ''}>{a.name}</span>
+                <span className="font-semibold">
+                  {formatMoney(balances.get(a.id) ?? 0, a.currency)}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-sm text-muted">Сверьте с балансами в 1Money.</p>
+        </Card>
+      )}
       <Card>
         <h2 className="mb-2 font-semibold">Будет импортировано</h2>
         <dl className="tabular grid grid-cols-[1fr_auto] gap-x-4 gap-y-1">

@@ -135,7 +135,27 @@
 .animate-fade-in {
   animation: fade-in 150ms ease-out;
 }
+/* Сердечко в подписи: два коротких удара и пауза, как пульс. */
+@keyframes heartbeat {
+  0%,
+  40%,
+  100% {
+    transform: scale(1);
+  }
+  10%,
+  30% {
+    transform: scale(1.25);
+  }
+  20% {
+    transform: scale(1.05);
+  }
+}
+.animate-heartbeat {
+  animation: heartbeat 1.4s ease-in-out infinite;
+  transform-origin: center;
+}
 @media (prefers-reduced-motion: reduce) {
+  .animate-heartbeat,
   .animate-sheet-in,
   .animate-fade-in {
     animation: none;

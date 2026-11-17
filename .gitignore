@@ -14,3 +14,7 @@ coverage
 !docs/examples/*.csv
 /backup*
 /private/
+
+# Локальные проверки на реальных данных — не коммитятся
+*.local.test.ts
+.claude/worktrees/

@@ -1,7 +1,8 @@
 import type { SqlJsStatic } from 'sql.js';
+import { computeBalances } from '../domain/balances';
 import { dayKey } from '../domain/dates';
 import { isSqlite, detectFile } from './detect';
-import { oneMoneyIds, parseOneMoneyBackup } from './oneMoneyBackup';
+import { argbToHex, oneMoneyIds, parseOneMoneyBackup } from './oneMoneyBackup';
 import { summarizePlan, type ImportPlan } from './types';
 import { applyImportPlan } from './apply';
 import { loadSqlJsForTests } from '../../tests/sqljs';
@@ -21,6 +22,13 @@ beforeAll(async () => {
 
 const tx = (id: number) => plan.transactions.find((t) => t.id === oneMoneyIds.transaction(id));
 const entity = (id: number) => oneMoneyIds.entity(id);
+const cat = (id: number) => plan.categories.find((c) => c.id === entity(id));
+const acc = (id: number) => plan.accounts.find((a) => a.id === entity(id));
+const ordered = (kind: 'expense' | 'income', p: ImportPlan = plan, parent?: number) =>
+  p.categories
+    .filter((c) => c.kind === kind && c.parentId === (parent ? entity(parent) : undefined))
+    .sort((a, b) => a.order - b.order)
+    .map((c) => c.name);
 
 describe('определение формата', () => {
   it('узнаёт SQLite по заголовку, а не по имени', () => {
@@ -35,44 +43,67 @@ describe('определение формата', () => {
 describe('импорт резервной копии 1Money', () => {
   it('берёт только операции последнего снимка', () => {
     expect(plan.errors).toEqual([]);
+    expect(plan.warnings).toEqual([]);
     expect(plan.transactions.map((t) => t.id).sort()).toEqual(
-      [101, 102, 103, 104, 105, 106, 107].map(oneMoneyIds.transaction).sort(),
+      [101, 102, 103, 104, 105, 106, 107, 108].map(oneMoneyIds.transaction).sort(),
     );
     expect(tx(100)).toBeUndefined();
   });
 
-  it('определяет счета и категории по ссылкам из операций', () => {
-    const accounts = plan.accounts.map((a) => a.name).sort();
-    expect(accounts).toEqual(['Карта Mbank', 'Накопления', 'Наличные']);
-    const expense = plan.categories.filter((c) => c.kind === 'expense').map((c) => c.name);
-    const income = plan.categories.filter((c) => c.kind === 'income').map((c) => c.name);
-    expect(expense.sort()).toEqual(['Кафе', 'Подарки', 'Продукты', 'Табак', 'Транспорт']);
-    expect(income).toEqual(['Зарплата']);
-    expect(plan.categories.some((c) => c.name === 'All accounts')).toBe(false);
-    expect(plan.accounts.some((a) => a.name === 'All accounts')).toBe(false);
+  it('не тянет записи из старых снимков (удалённые счета и категории прошлых установок)', () => {
+    const names = [...plan.accounts, ...plan.categories].map((x) => x.name);
+    for (const gone of ['Card', 'Groceries', 'Salary', 'Наличка', 'All accounts']) {
+      expect(names).not.toContain(gone);
+    }
   });
 
-  it('берёт последнюю версию строки de, архивные импортирует скрытыми', () => {
-    const cafe = plan.categories.find((c) => c.id === entity(11));
-    expect(cafe?.name).toBe('Кафе');
-    const tobacco = plan.categories.find((c) => c.id === entity(13));
-    expect(tobacco).toMatchObject({ name: 'Табак', archived: true });
-    expect(plan.accounts.find((a) => a.id === entity(2))?.kind).toBe('card');
+  it('счета — строки с начальным балансом, балансы сходятся с 1Money', () => {
+    expect(plan.accounts.map((a) => [a.name, a.kind, a.initialBalance])).toEqual([
+      ['Карта', 'card', -2875],
+      ['Копилка', 'savings', 77900],
+    ]);
+    const balances = computeBalances(plan.accounts, plan.transactions);
+    expect(balances.get(entity(1))).toBe(-191050);
+    expect(balances.get(entity(2))).toBe(69900);
   });
 
-  it('парсит суммы строкой в минимальные единицы', () => {
+  it('категории доходов (тоже _ty = 0) не путаются со счетами', () => {
+    expect(ordered('income')).toEqual(['Зарплата', 'Другое']);
+    expect(plan.categories).toHaveLength(9);
+  });
+
+  it('подкатегории привязаны к родителю, порядок и архив сохраняются', () => {
+    expect(ordered('expense')).toEqual([
+      'Транспорт и такси',
+      'Еда и продукты',
+      'Другое',
+      'Подарки',
+    ]);
+    expect(ordered('expense', plan, 10)).toEqual(['Вне дома', 'Дома']);
+    expect(ordered('expense', plan, 13)).toEqual(['Такси']);
+    expect(cat(12)?.archived).toBe(true);
+    expect(cat(15)?.archived).toBe(true);
+    expect(cat(13)?.name).toBe('Транспорт и такси');
+  });
+
+  it('цвета берутся из 1Money', () => {
+    expect(argbToHex(-10720320)).toBe('#5c6bc0');
+    expect(acc(1)?.color).toBe('#5c6bc0');
+    expect(cat(10)?.color).toBe('#42a5f5');
+    expect(cat(14)?.icon).toBe('car');
+  });
+
+  it('операции: суммы строкой в минимальные единицы, подкатегории, возвраты', () => {
     expect(tx(101)).toMatchObject({
       type: 'expense',
       amount: 7675,
-      isRefund: false,
+      categoryId: entity(10),
       note: 'Рынок',
     });
-    expect(tx(102)?.amount).toBe(286450);
-    expect(tx(104)).toMatchObject({ type: 'income', amount: 12000000, categoryId: entity(20) });
-  });
-
-  it('отрицательную сумму сохраняет как возврат', () => {
-    expect(tx(105)).toMatchObject({ type: 'expense', amount: -15050, isRefund: true });
+    expect(tx(102)).toMatchObject({ amount: 286450, categoryId: entity(11) });
+    expect(tx(107)).toMatchObject({ accountId: entity(2), categoryId: entity(14) });
+    expect(tx(104)).toMatchObject({ type: 'income', amount: 120000, categoryId: entity(20) });
+    expect(tx(105)).toMatchObject({ type: 'income', amount: -15050, isRefund: true });
   });
 
   it('перевод: _a_i — источник, _d_i — получатель', () => {
@@ -80,9 +111,11 @@ describe('импорт резервной копии 1Money', () => {
       type: 'transfer',
       accountId: entity(2),
       toAccountId: entity(1),
-      amount: 500000,
+      amount: 5000,
+      isRefund: false,
     });
     expect(tx(103)?.categoryId).toBeUndefined();
+    expect(tx(103)?.toAmount).toBeUndefined();
   });
 
   it('даты в мс Unix, дни — в поясе пользователя', () => {
@@ -91,42 +124,32 @@ describe('импорт резервной копии 1Money', () => {
   });
 
   it('валюта — выбранная пользователем', () => {
-    expect(new Set(plan.transactions.map((t) => t.currency))).toEqual(new Set(['KGS']));
     const usd = parseOneMoneyBackup(SQL, bytes, { currency: 'USD' });
     expect(new Set(usd.accounts.map((a) => a.currency))).toEqual(new Set(['USD']));
+    expect(new Set(plan.transactions.map((t) => t.currency))).toEqual(new Set(['KGS']));
   });
 
-  it('порядок категорий из bu последнего снимка', () => {
-    const expense = plan.categories
-      .filter((c) => c.kind === 'expense')
-      .sort((a, b) => a.order - b.order)
-      .map((c) => c.name);
-    expect(expense).toEqual(['Транспорт', 'Кафе', 'Продукты', 'Подарки', 'Табак']);
-  });
-
-  it('без связи bu → сортировка по названию и предупреждение', () => {
-    const p = parseOneMoneyBackup(SQL, makeOneMoneyDb(SQL, { withBuLink: false }), {
-      currency: 'KGS',
-    });
-    expect(p.warnings.some((w) => w.includes('bu'))).toBe(true);
-    const expense = p.categories
-      .filter((c) => c.kind === 'expense')
-      .sort((a, b) => a.order - b.order)
-      .map((c) => c.name);
-    expect(expense).toEqual(['Кафе', 'Подарки', 'Продукты', 'Табак', 'Транспорт']);
+  it('без таблицы порядка — сортировка по названию', () => {
+    const p = parseOneMoneyBackup(SQL, makeOneMoneyDb(SQL, { withBu: false }), { currency: 'KGS' });
+    expect(ordered('expense', p)).toEqual([
+      'Другое',
+      'Еда и продукты',
+      'Подарки',
+      'Транспорт и такси',
+    ]);
   });
 
   it('сводка перед импортом', () => {
     const s = summarizePlan(plan);
     expect(s).toMatchObject({
-      transactions: 7,
-      expenses: 5,
-      incomes: 1,
-      transfers: 1,
+      transactions: 8,
+      expenses: 4,
+      incomes: 2,
+      transfers: 2,
       refunds: 1,
-      accounts: 3,
-      categories: 6,
-      hiddenCategories: 1,
+      accounts: 2,
+      categories: 9,
+      hiddenCategories: 2,
       currencies: ['KGS'],
     });
     expect(dayKey(s.from!, TZ)).toBe('2026-01-10');
@@ -152,8 +175,8 @@ describe('импорт резервной копии 1Money', () => {
     const { repos } = await setupTestRepos();
     await applyImportPlan(plan, repos);
     await applyImportPlan(parseOneMoneyBackup(SQL, bytes, { currency: 'KGS' }), repos);
-    expect(await repos.transactions.getAll()).toHaveLength(7);
-    expect(await repos.accounts.getAll()).toHaveLength(3);
-    expect(await repos.categories.getAll()).toHaveLength(6);
+    expect(await repos.transactions.getAll()).toHaveLength(8);
+    expect(await repos.accounts.getAll()).toHaveLength(2);
+    expect(await repos.categories.getAll()).toHaveLength(9);
   });
 });

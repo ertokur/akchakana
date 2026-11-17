@@ -34,7 +34,7 @@ export function guessCategoryIcon(name: string, fallback = 'tag'): string {
 
 export function guessAccountKind(name: string): AccountKind {
   if (/кредит|credit/i.test(name)) return 'credit';
-  if (/накоп|депозит|вклад|сбереж|saving|deposit/i.test(name)) return 'savings';
+  if (/накоп|копил|депозит|вклад|сбереж|заначк|saving|deposit|piggy/i.test(name)) return 'savings';
   if (/карт|card|visa|master|элкарт|банк|bank/i.test(name)) return 'card';
   return 'cash';
 }

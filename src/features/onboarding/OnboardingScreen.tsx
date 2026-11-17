@@ -117,6 +117,8 @@ export function OnboardingScreen() {
           Импортировать резервную копию
         </Button>
       </section>
+
+      <p className="text-center text-sm text-muted">Made by Erbol Tokur and Claude with &lt;3</p>
     </div>
   );
 }

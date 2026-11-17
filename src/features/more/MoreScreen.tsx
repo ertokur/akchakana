@@ -9,6 +9,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { navigate, type Route } from '../../app/router';
+import { MadeWith } from '../../ui/MadeWith';
 import { Screen } from '../../ui/Screen';
 
 const ITEMS: { route: Route; label: string; hint: string; icon: typeof Shapes }[] = [
@@ -24,26 +25,30 @@ const ITEMS: { route: Route; label: string; hint: string; icon: typeof Shapes }[
 export function MoreScreen() {
   return (
     <Screen title="Ещё">
-      <ul className="flex flex-col gap-px overflow-hidden rounded-xl">
-        {ITEMS.map(({ route, label, hint, icon: Icon }) => (
-          <li key={route}>
-            <button
-              type="button"
-              onClick={() => navigate(route)}
-              className="flex min-h-16 w-full items-center gap-3 bg-surface px-4 py-2 text-left"
-            >
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-accent-soft text-accent-strong">
-                <Icon size={20} aria-hidden="true" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block font-medium">{label}</span>
-                <span className="block truncate text-sm text-muted">{hint}</span>
-              </span>
-              <ChevronRight size={20} className="text-muted" aria-hidden="true" />
-            </button>
-          </li>
-        ))}
-      </ul>
+      {/* Колонка на всю высоту экрана, чтобы подпись стояла в самом низу. */}
+      <div className="flex min-h-[calc(100dvh-11rem)] flex-col">
+        <ul className="flex flex-col gap-px overflow-hidden rounded-xl">
+          {ITEMS.map(({ route, label, hint, icon: Icon }) => (
+            <li key={route}>
+              <button
+                type="button"
+                onClick={() => navigate(route)}
+                className="flex min-h-16 w-full items-center gap-3 bg-surface px-4 py-2 text-left"
+              >
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-accent-soft text-accent-strong">
+                  <Icon size={20} aria-hidden="true" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-medium">{label}</span>
+                  <span className="block truncate text-sm text-muted">{hint}</span>
+                </span>
+                <ChevronRight size={20} className="text-muted" aria-hidden="true" />
+              </button>
+            </li>
+          ))}
+        </ul>
+        <MadeWith />
+      </div>
     </Screen>
   );
 }
