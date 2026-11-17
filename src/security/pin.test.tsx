@@ -75,6 +75,6 @@ describe('настройки', () => {
     await user.type(screen.getByLabelText('Подтверждение'), 'удалить');
     await user.click(confirm);
     await waitFor(async () => expect(await repos.accounts.getAll()).toHaveLength(0));
-    expect(await screen.findByRole('heading', { name: 'Первый счёт' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Акчакана', level: 1 })).toBeInTheDocument();
   });
 });

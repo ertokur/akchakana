@@ -1,5 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#4f46e5"/>
-  <circle cx="256" cy="256" r="150" fill="none" stroke="#e6e5fc" stroke-width="28"/>
-  <path d="M256 150v212M196 206c0-24 26-40 60-40s60 16 60 40-26 34-60 40-60 18-60 42 26 40 60 40 60-16 60-40" fill="none" stroke="#ffffff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <rect width="120" height="120" rx="30" fill="#4f46e5"/>
+  <g transform="rotate(-90 60 60)" fill="none" stroke-width="13">
+    <circle cx="60" cy="60" r="31" stroke="#ffffff" stroke-dasharray="66.23 194.78" stroke-dashoffset="0"/>
+    <circle cx="60" cy="60" r="31" stroke="#c7d2fe" stroke-dasharray="46.75 194.78" stroke-dashoffset="-72.07"/>
+    <circle cx="60" cy="60" r="31" stroke="#a5b4fc" stroke-dasharray="35.06 194.78" stroke-dashoffset="-124.66"/>
+    <circle cx="60" cy="60" r="31" stroke="#fbbf24" stroke-dasharray="23.37 194.78" stroke-dashoffset="-165.56"/>
+  </g>
+  <circle cx="60" cy="60" r="13" fill="#fbbf24"/>
+  <circle cx="60" cy="60" r="9" fill="none" stroke="#f59e0b" stroke-width="2.5"/>
+  <path d="M54.5 57.5a6 6 0 0 1 5-4.5" fill="none" stroke="#fffbeb" stroke-width="2.4" stroke-linecap="round"/>
 </svg>

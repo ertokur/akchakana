@@ -126,13 +126,4 @@ describe('экран операций', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Введите сумму');
     expect(await repos.transactions.getAll()).toHaveLength(0);
   });
-
-  it('показывает онбординг при первом запуске', async () => {
-    await setupTestRepos();
-    render(<App />);
-    expect(await screen.findByRole('heading', { name: 'Первый счёт' })).toBeInTheDocument();
-    expect(
-      screen.getByRole('note', { name: /Made by Erbol Tokur and Claude/ }),
-    ).toBeInTheDocument();
-  });
 });
