@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ACCOUNT_KIND_ICONS, ACCOUNT_KIND_LABELS, makeAccount, PALETTE } from '../../db/seed';
+import { ACCOUNT_KIND_ICONS, ACCOUNT_KINDS, makeAccount, PALETTE } from '../../db/seed';
 import {
   COMMON_CURRENCIES,
   fractionDigits,
@@ -13,8 +13,10 @@ import { BottomSheet, ConfirmDialog } from '../../ui/BottomSheet';
 import { Button, Field, Select, TextInput, Toggle } from '../../ui/controls';
 import { ColorPicker, IconPicker } from '../../ui/pickers';
 import { getRepositories } from '../../repositories';
+import { useT } from '../../i18n';
 
 export function AccountForm({ account, onClose }: { account?: Account; onClose: () => void }) {
+  const t = useT();
   const accounts = useData((s) => s.accounts);
   const settings = useData((s) => s.settings);
   const saveAccount = useData((s) => s.saveAccount);
@@ -47,11 +49,11 @@ export function AccountForm({ account, onClose }: { account?: Account; onClose: 
     : [currency, ...COMMON_CURRENCIES];
 
   const save = async () => {
-    if (!name.trim()) return setError('Введите название');
+    if (!name.trim()) return setError(t('form.enterName'));
     const initialBalance = balance.trim() === '' ? 0 : tryParseMinor(balance, digits);
-    if (initialBalance === null) return setError('Неверный начальный баланс');
+    if (initialBalance === null) return setError(t('account.invalidInitial'));
     const creditLimit = limit.trim() === '' ? undefined : tryParseMinor(limit, digits);
-    if (creditLimit === null) return setError('Неверный кредитный лимит');
+    if (creditLimit === null) return setError(t('account.invalidLimit'));
     const now = Date.now();
     const base = account ?? makeAccount({ name, currency }, now);
     await saveAccount({
@@ -67,7 +69,7 @@ export function AccountForm({ account, onClose }: { account?: Account; onClose: 
       order: account ? account.order : Math.max(-1, ...accounts.map((a) => a.order)) + 1,
       updatedAt: now,
     });
-    toast({ text: account ? 'Счёт сохранён' : 'Счёт создан' });
+    toast({ text: account ? t('account.saved') : t('account.created') });
     onClose();
   };
 
@@ -76,10 +78,10 @@ export function AccountForm({ account, onClose }: { account?: Account; onClose: 
     const refs = await getRepositories().transactions.countReferences(account.id);
     if (refs > 0) {
       setConfirm(false);
-      return setError(`По счёту есть операции (${refs}). Скройте его вместо удаления.`);
+      return setError(t('account.hasTransactions', { count: refs }));
     }
     await deleteAccount(account.id);
-    toast({ text: 'Счёт удалён' });
+    toast({ text: t('account.deleted') });
     onClose();
   };
 
@@ -88,22 +90,22 @@ export function AccountForm({ account, onClose }: { account?: Account; onClose: 
       open
       tall
       onClose={onClose}
-      title={account ? 'Счёт' : 'Новый счёт'}
+      title={account ? t('common.account') : t('account.new')}
       footer={
         <div className="flex gap-2">
           {account && (
             <Button variant="danger" onClick={() => setConfirm(true)}>
-              Удалить
+              {t('common.delete')}
             </Button>
           )}
           <Button block onClick={save}>
-            Сохранить
+            {t('common.save')}
           </Button>
         </div>
       }
     >
       <div className="flex flex-col gap-4">
-        <Field label="Название">
+        <Field label={t('common.name')}>
           {(id) => (
             <TextInput
               id={id}
@@ -113,7 +115,7 @@ export function AccountForm({ account, onClose }: { account?: Account; onClose: 
             />
           )}
         </Field>
-        <Field label="Тип">
+        <Field label={t('account.kind')}>
           {(id) => (
             <Select
               id={id}
@@ -125,17 +127,17 @@ export function AccountForm({ account, onClose }: { account?: Account; onClose: 
                   setIcon(ACCOUNT_KIND_ICONS[k]);
               }}
             >
-              {Object.entries(ACCOUNT_KIND_LABELS).map(([k, label]) => (
+              {ACCOUNT_KINDS.map((k) => (
                 <option key={k} value={k}>
-                  {label}
+                  {t(`account.kind.${k}`)}
                 </option>
               ))}
             </Select>
           )}
         </Field>
         <Field
-          label="Валюта"
-          hint={hasTransactions ? 'Валюту нельзя менять, пока по счёту есть операции' : undefined}
+          label={t('common.currency')}
+          hint={hasTransactions ? t('account.currencyLocked') : undefined}
         >
           {(id) => (
             <Select
@@ -152,7 +154,7 @@ export function AccountForm({ account, onClose }: { account?: Account; onClose: 
             </Select>
           )}
         </Field>
-        <Field label="Начальный баланс">
+        <Field label={t('account.initialBalance')}>
           {(id) => (
             <TextInput
               id={id}
@@ -164,7 +166,7 @@ export function AccountForm({ account, onClose }: { account?: Account; onClose: 
           )}
         </Field>
         {kind === 'credit' && (
-          <Field label="Кредитный лимит">
+          <Field label={t('account.creditLimit')}>
             {(id) => (
               <TextInput
                 id={id}
@@ -177,19 +179,19 @@ export function AccountForm({ account, onClose }: { account?: Account; onClose: 
           </Field>
         )}
         <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-muted">Цвет</span>
+          <span className="text-sm font-medium text-muted">{t('common.color')}</span>
           <ColorPicker value={color} onChange={setColor} />
         </div>
         <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-muted">Иконка</span>
+          <span className="text-sm font-medium text-muted">{t('common.icon')}</span>
           <IconPicker value={icon} color={color} onChange={setIcon} />
         </div>
         {account && (
           <Toggle
             checked={archived}
             onChange={setArchived}
-            label="Скрыть счёт"
-            description="Скрытый счёт не участвует в общем балансе и не предлагается в новых операциях"
+            label={t('account.hide')}
+            description={t('account.hideHint')}
           />
         )}
         {error && (
@@ -200,8 +202,8 @@ export function AccountForm({ account, onClose }: { account?: Account; onClose: 
       </div>
       <ConfirmDialog
         open={confirm}
-        title="Удалить счёт?"
-        text="Удалить можно только счёт без операций."
+        title={t('account.deleteConfirm')}
+        text={t('account.deleteHint')}
         onCancel={() => setConfirm(false)}
         onConfirm={remove}
       />

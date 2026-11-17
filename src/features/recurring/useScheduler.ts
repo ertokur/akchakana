@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useUi } from '../../stores/uiStore';
 import { runSnapshotIfDue } from '../backup/backup';
 import { runScheduler } from './scheduler';
+import { t } from '../../i18n';
 
 /**
  * Запускает обработку повторов и внутреннюю резервную копию по расписанию:
@@ -17,7 +18,7 @@ export function useScheduler(enabled: boolean): void {
       try {
         const created = await runScheduler();
         if (created > 0) {
-          useUi.getState().toast({ text: `Добавлено регулярных операций: ${created}` });
+          useUi.getState().toast({ text: t('recurring.autoAdded', { count: created }) });
         }
         try {
           await runSnapshotIfDue();

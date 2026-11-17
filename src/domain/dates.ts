@@ -10,7 +10,7 @@ import {
   startOfYear,
 } from 'date-fns';
 import { formatInTimeZone, fromZonedTime, toZonedTime } from 'date-fns-tz';
-import { ru } from 'date-fns/locale';
+import { dateLocale, getLang, t } from '../i18n';
 import type { Timestamp } from './types';
 
 export type PeriodKind = 'day' | 'week' | 'month' | 'year' | 'custom';
@@ -158,36 +158,72 @@ export function monthsOfPeriod(period: Period, timeZone: string): string[] {
 }
 
 export function formatInTz(ts: Timestamp, timeZone: string, pattern: string): string {
-  return formatInTimeZone(ts, timeZone, pattern, { locale: ru });
+  return formatInTimeZone(ts, timeZone, pattern, { locale: dateLocale() });
+}
+
+/** Именованные форматы дат: порядок дня и месяца зависит от языка. */
+const DATE_PATTERNS = {
+  ru: {
+    time: 'HH:mm',
+    dayMonth: 'd MMMM',
+    dayMonthYear: 'd MMMM yyyy',
+    dayShort: 'd MMM',
+    dayShortYear: 'd MMM yyyy',
+    weekdayDayMonth: 'EEEE, d MMMM',
+    weekdayDayMonthYear: 'EEEE, d MMMM yyyy',
+    dayMonthTime: 'd MMMM, HH:mm',
+    dayMonthYearTime: 'd MMMM yyyy, HH:mm',
+    monthYear: 'LLLL yyyy',
+  },
+  en: {
+    time: 'h:mm a',
+    dayMonth: 'MMMM d',
+    dayMonthYear: 'MMMM d, yyyy',
+    dayShort: 'MMM d',
+    dayShortYear: 'MMM d, yyyy',
+    weekdayDayMonth: 'EEEE, MMMM d',
+    weekdayDayMonthYear: 'EEEE, MMMM d, yyyy',
+    dayMonthTime: 'MMMM d, h:mm a',
+    dayMonthYearTime: 'MMMM d, yyyy, h:mm a',
+    monthYear: 'LLLL yyyy',
+  },
+} as const;
+
+export type DateStyle = keyof (typeof DATE_PATTERNS)['ru'];
+
+/** Дата в поясе пользователя в именованном формате на текущем языке. */
+export function formatDate(ts: Timestamp, timeZone: string, style: DateStyle): string {
+  return formatInTz(ts, timeZone, DATE_PATTERNS[getLang()][style]);
 }
 
 /** Подпись периода для переключателя: «27 октября 2026», «октябрь 2026», «2026». */
 export function periodLabel(period: Period, timeZone: string): string {
-  const f = (ts: Timestamp, p: string) => formatInTz(ts, timeZone, p);
+  const f = (ts: Timestamp, style: DateStyle) => formatDate(ts, timeZone, style);
   const last = period.end - 1;
+  const year = (ts: Timestamp) => formatInTz(ts, timeZone, 'yyyy');
   switch (period.kind) {
     case 'day':
-      return f(period.start, 'd MMMM yyyy');
+      return f(period.start, 'dayMonthYear');
     case 'month':
-      return f(period.start, 'LLLL yyyy');
+      return f(period.start, 'monthYear');
     case 'year':
-      return f(period.start, 'yyyy');
+      return year(period.start);
     default:
-      if (f(period.start, 'yyyy') === f(last, 'yyyy')) {
-        return `${f(period.start, 'd MMM')} – ${f(last, 'd MMM yyyy')}`;
+      if (year(period.start) === year(last)) {
+        return `${f(period.start, 'dayShort')} – ${f(last, 'dayShortYear')}`;
       }
-      return `${f(period.start, 'd MMM yyyy')} – ${f(last, 'd MMM yyyy')}`;
+      return `${f(period.start, 'dayShortYear')} – ${f(last, 'dayShortYear')}`;
   }
 }
 
 /** Подпись дня в списке: «Сегодня», «Вчера» или «понедельник, 26 октября». */
 export function dayHeading(key: string, now: Timestamp, timeZone: string): string {
   const today = dayKey(now, timeZone);
-  if (key === today) return 'Сегодня';
-  if (key === wallKey(addDays(wallDate(today), -1))) return 'Вчера';
+  if (key === today) return t('common.today');
+  if (key === wallKey(addDays(wallDate(today), -1))) return t('common.yesterday');
   const ts = startOfDayKey(key, timeZone) + DAY_MS / 2;
   const sameYear = key.slice(0, 4) === today.slice(0, 4);
-  return formatInTz(ts, timeZone, sameYear ? 'EEEE, d MMMM' : 'EEEE, d MMMM yyyy');
+  return formatDate(ts, timeZone, sameYear ? 'weekdayDayMonth' : 'weekdayDayMonthYear');
 }
 
 /** Значение для `<input type="datetime-local">` в поясе пользователя. */

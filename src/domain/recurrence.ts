@@ -1,6 +1,7 @@
 import { addDays, addMonths, addWeeks, addYears } from 'date-fns';
 import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 import type { RecurrenceFreq, RecurringRule, Timestamp } from './types';
+import { t } from '../i18n';
 
 const ADDERS: Record<RecurrenceFreq, (d: Date, n: number) => Date> = {
   day: addDays,
@@ -56,15 +57,14 @@ export function dueOccurrences(
   return result;
 }
 
-export const FREQ_LABELS: Record<RecurrenceFreq, string> = {
-  day: 'Каждый день',
-  week: 'Каждую неделю',
-  month: 'Каждый месяц',
-  year: 'Каждый год',
-};
+export const FREQS: RecurrenceFreq[] = ['day', 'week', 'month', 'year'];
+
+/** «Каждый день», «Каждую неделю»… на текущем языке. */
+export function freqLabel(freq: RecurrenceFreq): string {
+  return t(`recurrence.freq.${freq}`);
+}
 
 export function describeRule(rule: Pick<RecurringRule, 'freq' | 'interval'>): string {
-  if (rule.interval <= 1) return FREQ_LABELS[rule.freq];
-  const unit = { day: 'дн.', week: 'нед.', month: 'мес.', year: 'г.' }[rule.freq];
-  return `Каждые ${rule.interval} ${unit}`;
+  if (rule.interval <= 1) return freqLabel(rule.freq);
+  return t(`recurrence.every.${rule.freq}`, { count: rule.interval });
 }

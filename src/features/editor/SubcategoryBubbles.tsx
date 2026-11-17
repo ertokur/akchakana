@@ -1,6 +1,7 @@
 import { Check } from 'lucide-react';
 import type { Category, Id } from '../../domain/types';
 import { Icon } from '../../ui/Icon';
+import { useT } from '../../i18n';
 
 /**
  * Выбор подкатегории в шторке операции: горизонтальная строка круглых значков.
@@ -17,11 +18,12 @@ export function SubcategoryBubbles({
   value?: Id;
   onChange: (id: Id) => void;
 }) {
+  const t = useT();
   const options = [parent, ...subcategories];
   return (
     <div
       role="radiogroup"
-      aria-label="Подкатегория"
+      aria-label={t('editor.subcategory')}
       className="-mx-4 flex gap-1 overflow-x-auto px-4 pb-1 [scrollbar-width:none]"
     >
       {options.map((c) => {
@@ -33,7 +35,7 @@ export function SubcategoryBubbles({
             type="button"
             role="radio"
             aria-checked={checked}
-            aria-label={isParent ? `${c.name}, без подкатегории` : c.name}
+            aria-label={isParent ? t('editor.parentItself', { name: c.name }) : c.name}
             onClick={() => onChange(c.id)}
             className="flex w-[4.25rem] shrink-0 flex-col items-center gap-1 rounded-xl py-1 active:scale-95"
             style={{ transition: 'transform 120ms ease-out' }}

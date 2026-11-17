@@ -1,3 +1,5 @@
+import { t } from '../i18n';
+
 const CSV_MIME = 'text/csv;charset=utf-8';
 
 /** Обычное скачивание через `<a download>`: файл попадает в «Загрузки». */
@@ -92,7 +94,7 @@ export async function saveFileAs(
     try {
       const handle = await picker({
         suggestedName: fileName,
-        types: [{ description: 'Таблица CSV', accept: { 'text/csv': ['.csv'] } }],
+        types: [{ description: t('backup.csvType'), accept: { 'text/csv': ['.csv'] } }],
       });
       const writable = await handle.createWritable();
       await writable.write(blob);

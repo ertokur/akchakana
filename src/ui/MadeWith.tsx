@@ -1,5 +1,8 @@
+import { useT } from '../i18n';
+
 /** Подпись авторов с бьющимся сердцем (внизу вкладки «Ещё» и на экране первого запуска). */
 export function MadeWith({ className = 'mt-auto pt-8 pb-2' }: { className?: string }) {
+  const t = useT();
   return (
     <div className={`flex justify-center ${className}`}>
       <p
@@ -15,7 +18,7 @@ export function MadeWith({ className = 'mt-auto pt-8 pb-2' }: { className?: stri
         <span
           className="animate-heartbeat inline-block text-lg leading-none"
           role="img"
-          aria-label="любовью"
+          aria-label={t('madeWith.love')}
         >
           ❤️
         </span>

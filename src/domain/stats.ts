@@ -1,5 +1,6 @@
 import { daysOfPeriod, dayKey, monthKey, monthsOfPeriod, type Period } from './dates';
 import type { Category, CategoryKind, CurrencyCode, Id, Minor, Transaction } from './types';
+import { t } from '../i18n';
 
 export interface CategorySlice {
   categoryId: Id | null;
@@ -42,7 +43,11 @@ export function totalsByCategory(
       const isParentItself = opts.parentId && id === opts.parentId;
       return {
         categoryId: id,
-        name: c ? (isParentItself ? `${c.name} (без подкатегории)` : c.name) : 'Без категории',
+        name: c
+          ? isParentItself
+            ? t('stats.parentItself', { name: c.name })
+            : c.name
+          : t('common.noCategory'),
         color: c?.color ?? '#57534e',
         icon: c?.icon ?? 'tag',
         amount,
@@ -58,7 +63,13 @@ export function foldSmallSlices(slices: CategorySlice[], maxSlices = 8): Categor
   const rest = slices.slice(maxSlices - 1).reduce((s, x) => s + x.amount, 0);
   return [
     ...head,
-    { categoryId: '__other', name: 'Остальное', color: '#78716c', icon: 'dots', amount: rest },
+    {
+      categoryId: '__other',
+      name: t('common.other'),
+      color: '#78716c',
+      icon: 'dots',
+      amount: rest,
+    },
   ];
 }
 

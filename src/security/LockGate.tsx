@@ -5,6 +5,7 @@ import { ConfirmDialog } from '../ui/BottomSheet';
 import { TextInput } from '../ui/controls';
 import { verifyPin } from './pin';
 import { PinPad } from './PinPad';
+import { useT } from '../i18n';
 
 const LOCK_AFTER_MS = 60_000;
 
@@ -21,6 +22,7 @@ export function LockGate({ children }: { children: ReactNode }) {
   const [forgot, setForgot] = useState(false);
   const [confirmText, setConfirmText] = useState('');
   const hiddenAt = useRef<number | null>(null);
+  const t = useT();
 
   useEffect(() => {
     if (!enabled) return;
@@ -46,7 +48,7 @@ export function LockGate({ children }: { children: ReactNode }) {
       setPin('');
       setError(null);
     } else {
-      setError('Неверный PIN-код');
+      setError(t('lock.wrongPin'));
       setPin('');
     }
   };
@@ -54,7 +56,7 @@ export function LockGate({ children }: { children: ReactNode }) {
   return (
     <div className="pt-safe pb-safe flex min-h-dvh flex-col items-center justify-center gap-6 px-6">
       <Lock size={36} className="text-accent" aria-hidden="true" />
-      <h1 className="text-xl font-semibold">Введите PIN-код</h1>
+      <h1 className="text-xl font-semibold">{t('lock.enterPin')}</h1>
       {error && (
         <p role="alert" className="font-medium text-expense">
           {error}
@@ -67,21 +69,21 @@ export function LockGate({ children }: { children: ReactNode }) {
           setError(null);
         }}
         onSubmit={submit}
-        submitLabel={checking ? '…' : 'Войти'}
+        submitLabel={checking ? '…' : t('lock.unlock')}
       />
       <button
         type="button"
         className="min-h-11 px-3 text-sm text-muted underline"
         onClick={() => setForgot(true)}
       >
-        Забыли PIN-код?
+        {t('lock.forgot')}
       </button>
       <ConfirmDialog
         open={forgot}
-        title="Сбросить все данные?"
-        text="PIN-код нельзя восстановить. Можно только удалить все данные на этом устройстве и начать заново (или затем импортировать резервную копию). Введите УДАЛИТЬ для подтверждения."
-        confirmLabel="Удалить всё"
-        confirmDisabled={confirmText.trim().toUpperCase() !== 'УДАЛИТЬ'}
+        title={t('lock.resetTitle')}
+        text={t('lock.resetText', { word: t('lock.confirmWord') })}
+        confirmLabel={t('lock.resetConfirm')}
+        confirmDisabled={confirmText.trim().toUpperCase() !== t('lock.confirmWord')}
         onCancel={() => {
           setForgot(false);
           setConfirmText('');
@@ -93,7 +95,7 @@ export function LockGate({ children }: { children: ReactNode }) {
         }}
       >
         <TextInput
-          aria-label="Подтверждение"
+          aria-label={t('lock.confirmation')}
           value={confirmText}
           onChange={(e) => setConfirmText(e.target.value)}
         />

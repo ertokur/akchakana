@@ -19,12 +19,14 @@ import { filterTransactions } from '../transactions/grouping';
 import { PeriodSwitcher } from '../transactions/PeriodSwitcher';
 import { CategoryBubble } from './CategoryBubble';
 import { CategoryRing } from './CategoryRing';
+import { useT } from '../../i18n';
 
 /**
  * Главный экран: кольцо расходов за период в центре, вокруг — категории.
  * Нажатие на категорию сразу открывает ввод суммы, долгое нажатие — редактирование.
  */
 export function HomeScreen() {
+  const t = useT();
   const transactions = useData((s) => s.transactions);
   const categories = useData((s) => s.categories);
   const accounts = useData((s) => s.accounts);
@@ -75,10 +77,10 @@ export function HomeScreen() {
 
   return (
     <Screen
-      title="Категории"
+      title={t('nav.categories')}
       actions={
         <IconButton
-          label={editing ? 'Готово' : 'Изменить категории'}
+          label={editing ? t('common.done') : t('home.editCategories')}
           onClick={() => setEditing(!editing)}
           className={editing ? 'bg-accent text-accent-fg hover:bg-accent-strong' : ''}
         >
@@ -95,18 +97,16 @@ export function HomeScreen() {
       <ExportReminder />
       <RecurringDue />
       {accounts.length === 0 ? (
-        <EmptyState title="Нет счетов" text="Создайте счёт на вкладке «Счета»." />
+        <EmptyState title={t('home.noAccounts')} text={t('home.noAccountsText')} />
       ) : (
         <>
-          {editing && (
-            <p className="mb-2 text-center text-sm text-muted">
-              Нажмите на категорию, чтобы изменить её и подкатегории.
-            </p>
-          )}
+          {editing && <p className="mb-2 text-center text-sm text-muted">{t('home.editHint')}</p>}
           <div
             className="grid grid-cols-4 gap-x-1 gap-y-2"
             style={{ gridAutoFlow: 'row dense' }}
-            aria-label={kind === 'expense' ? 'Категории расходов' : 'Категории доходов'}
+            aria-label={
+              kind === 'expense' ? t('home.expenseCategories') : t('home.incomeCategories')
+            }
             role="group"
           >
             <div className="col-span-2 col-start-2 row-span-2 row-start-2 flex items-center justify-center">
@@ -114,11 +114,13 @@ export function HomeScreen() {
                 type="button"
                 className="rounded-full"
                 onClick={() => setKind(kind === 'expense' ? 'income' : 'expense')}
-                aria-label={`${kind === 'expense' ? 'Расходы' : 'Доходы'} ${formatMoney(mainTotal, currency)}. Показать ${kind === 'expense' ? 'доходы' : 'расходы'}`}
+                aria-label={t(kind === 'expense' ? 'home.ringExpenseAria' : 'home.ringIncomeAria', {
+                  amount: formatMoney(mainTotal, currency),
+                })}
               >
                 <CategoryRing slices={slices} size={152}>
                   <span className="text-xs text-muted">
-                    {kind === 'expense' ? 'Расходы' : 'Доходы'}
+                    {kind === 'expense' ? t('common.expenses') : t('common.incomes')}
                   </span>
                   <span
                     className={`tabular max-w-[8.5rem] text-base leading-tight font-bold break-words ${kind === 'expense' ? 'text-expense' : 'text-income'}`}
@@ -150,10 +152,10 @@ export function HomeScreen() {
               onClick={() => setForm('new')}
               className="flex flex-col items-center gap-1 rounded-xl py-1"
               aria-label={
-                kind === 'expense' ? 'Новая категория расходов' : 'Новая категория доходов'
+                kind === 'expense' ? t('home.newExpenseCategory') : t('home.newIncomeCategory')
               }
             >
-              <span className="text-xs text-muted">Добавить</span>
+              <span className="text-xs text-muted">{t('common.add')}</span>
               <span className="flex h-[62px] w-[62px] items-center justify-center">
                 <span className="flex h-[52px] w-[52px] items-center justify-center rounded-full border-2 border-dashed border-border text-muted">
                   <Plus size={24} />
@@ -161,12 +163,7 @@ export function HomeScreen() {
               </span>
             </button>
           </div>
-          {!editing && (
-            <p className="mt-4 text-center text-xs text-muted">
-              Нажмите на круг, чтобы переключить расходы и доходы. Долгое нажатие на категорию —
-              изменить её.
-            </p>
-          )}
+          {!editing && <p className="mt-4 text-center text-xs text-muted">{t('home.ringHint')}</p>}
         </>
       )}
       {form && (

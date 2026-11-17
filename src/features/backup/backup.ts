@@ -1,4 +1,5 @@
 import { newId } from '../../domain/ids';
+import { t } from '../../i18n';
 import type { BackupSnapshot, BackupTarget, Timestamp } from '../../domain/types';
 import { buildOwnCsv } from '../../exporters/ownCsv';
 import { saveFileAs } from '../../exporters/share';
@@ -92,8 +93,13 @@ export async function saveBackupFile(
   return result;
 }
 
-export const SAVE_RESULT_TEXT: Record<Exclude<SaveResult, 'cancelled'>, string> = {
-  shared: 'Копия передана',
-  saved: 'Копия сохранена',
-  downloaded: 'Копия сохранена в «Загрузки»',
-};
+/** Текст уведомления о результате сохранения копии на текущем языке. */
+export function saveResultText(result: Exclude<SaveResult, 'cancelled'>): string {
+  return t(
+    result === 'shared'
+      ? 'backup.shared'
+      : result === 'saved'
+        ? 'backup.saved'
+        : 'backup.downloaded',
+  );
+}

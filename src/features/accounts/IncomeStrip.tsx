@@ -7,12 +7,14 @@ import { useUi } from '../../stores/uiStore';
 import { CategoryBubble } from '../home/CategoryBubble';
 import { usePeriod, usePeriodOptions } from '../shared/hooks';
 import { filterTransactions } from '../transactions/grouping';
+import { useT } from '../../i18n';
 
 /**
  * Верх экрана «Счета»: категории доходов за период.
  * Нажатие на доход открывает ввод суммы с этой категорией, кнопка «Перевод» — перевод между счетами.
  */
 export function IncomeStrip() {
+  const t = useT();
   const categories = useData((s) => s.categories);
   const transactions = useData((s) => s.transactions);
   const currency = useData((s) => s.settings.defaultCurrency);
@@ -34,10 +36,10 @@ export function IncomeStrip() {
   }, [transactions, period, categories, currency]);
 
   return (
-    <section aria-label="Доходы" className="mb-4 rounded-2xl bg-surface p-3">
+    <section aria-label={t('common.incomes')} className="mb-4 rounded-2xl bg-surface p-3">
       <div className="mb-1 flex items-center justify-between gap-2">
         <h2 className="text-sm font-semibold">
-          Доходы{' '}
+          {t('common.incomes')}{' '}
           <span className="font-normal text-muted">· {periodLabel(period, opts.timeZone)}</span>
         </h2>
         <button
@@ -45,11 +47,11 @@ export function IncomeStrip() {
           onClick={() => openNew('transfer')}
           className="flex min-h-11 items-center gap-1.5 rounded-xl bg-accent-soft px-3 text-sm font-semibold text-accent-strong"
         >
-          <ArrowLeftRight size={16} aria-hidden="true" /> Перевод
+          <ArrowLeftRight size={16} aria-hidden="true" /> {t('common.transfer')}
         </button>
       </div>
       {income.length === 0 ? (
-        <p className="text-sm text-muted">Нет категорий доходов.</p>
+        <p className="text-sm text-muted">{t('accounts.noIncomeCategories')}</p>
       ) : (
         <div className="-mx-1 flex gap-1 overflow-x-auto pb-1">
           {income.map((c) => (

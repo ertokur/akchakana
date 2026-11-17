@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Download } from 'lucide-react';
 import { navigate } from '../../app/router';
-import { customPeriod, formatInTz } from '../../domain/dates';
+import { customPeriod, formatDate } from '../../domain/dates';
 import { buildOwnCsv, exportFileName, filterExport } from '../../exporters/ownCsv';
 import { shareOrDownload } from '../../exporters/share';
 import { byOrder, useData } from '../../stores/dataStore';
@@ -9,8 +9,10 @@ import { useUi } from '../../stores/uiStore';
 import { Button, Card, Field, SegmentedControl, TextInput, Toggle } from '../../ui/controls';
 import { Screen } from '../../ui/Screen';
 import { usePeriodOptions } from '../shared/hooks';
+import { useT } from '../../i18n';
 
 export function ExportScreen() {
+  const t = useT();
   const data = useData();
   const updateSettings = useData((s) => s.updateSettings);
   const toast = useUi((s) => s.toast);
@@ -41,7 +43,7 @@ export function ExportScreen() {
       const result = await shareOrDownload(csv, exportFileName(now, opts.timeZone));
       if (result !== 'cancelled') {
         await updateSettings({ lastExportAt: now, exportSnoozedUntil: undefined });
-        toast({ text: result === 'shared' ? 'Файл передан' : 'Файл сохранён' });
+        toast({ text: result === 'shared' ? t('export.shared') : t('export.saved') });
       }
     } finally {
       setBusy(false);
@@ -49,31 +51,31 @@ export function ExportScreen() {
   };
 
   return (
-    <Screen title="Экспорт" onBack={() => navigate('more')}>
+    <Screen title={t('more.export')} onBack={() => navigate('more')}>
       <div className="flex flex-col gap-4">
         <Card className="text-sm text-muted">
-          Все данные выгружаются в один CSV-файл (UTF-8, разделитель «;»): операции, счета,
-          категории, бюджеты, долги и регулярные платежи. Этот же файл можно импортировать обратно.
+          {t('export.description')}
           {data.settings.lastExportAt && (
             <span className="mt-1 block">
-              Последний экспорт:{' '}
-              {formatInTz(data.settings.lastExportAt, opts.timeZone, 'd MMMM yyyy, HH:mm')}
+              {t('export.last', {
+                date: formatDate(data.settings.lastExportAt, opts.timeZone, 'dayMonthYearTime'),
+              })}
             </span>
           )}
         </Card>
         <Card className="flex flex-col gap-3">
           <SegmentedControl
-            label="Период операций"
+            label={t('export.range')}
             value={range}
             options={[
-              { value: 'all', label: 'Всё время' },
-              { value: 'custom', label: 'Период' },
+              { value: 'all', label: t('export.allTime') },
+              { value: 'custom', label: t('period.title') },
             ]}
             onChange={setRange}
           />
           {range === 'custom' && (
             <div className="grid grid-cols-2 gap-2">
-              <Field label="С">
+              <Field label={t('period.from')}>
                 {(id) => (
                   <TextInput
                     id={id}
@@ -83,7 +85,7 @@ export function ExportScreen() {
                   />
                 )}
               </Field>
-              <Field label="По">
+              <Field label={t('period.to')}>
                 {(id) => (
                   <TextInput
                     id={id}
@@ -98,7 +100,7 @@ export function ExportScreen() {
         </Card>
         {accounts.length > 1 && (
           <Card>
-            <h2 className="mb-1 font-semibold">Операции по счетам</h2>
+            <h2 className="mb-1 font-semibold">{t('export.byAccount')}</h2>
             {accounts.map((a) => (
               <Toggle
                 key={a.id}
@@ -115,12 +117,15 @@ export function ExportScreen() {
           </Card>
         )}
         <p className="text-sm text-muted">
-          В файл попадёт операций: {filtered.transactions.length}, счетов:{' '}
-          {filtered.accounts.length}, категорий: {filtered.categories.length}, бюджетов:{' '}
-          {filtered.budgets.length}.
+          {t('export.counts', {
+            transactions: filtered.transactions.length,
+            accounts: filtered.accounts.length,
+            categories: filtered.categories.length,
+            budgets: filtered.budgets.length,
+          })}
         </p>
         <Button block disabled={busy || (range === 'custom' && (!from || !to))} onClick={run}>
-          <Download size={20} aria-hidden="true" /> Экспортировать
+          <Download size={20} aria-hidden="true" /> {t('export.run')}
         </Button>
       </div>
     </Screen>

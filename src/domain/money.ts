@@ -1,4 +1,5 @@
 import type { CurrencyCode, Minor } from './types';
+import { getLang, t, type Lang } from '../i18n';
 
 const digitsCache = new Map<string, number>();
 
@@ -35,7 +36,7 @@ export function parseMinor(input: string, digits = 2): Minor {
   } else if (s.startsWith('+')) {
     s = s.slice(1);
   }
-  if (s === '') throw new RangeError(`Неверная сумма: «${input}»`);
+  if (s === '') throw new RangeError(t('money.invalid', { input }));
   const lastDot = s.lastIndexOf('.');
   const lastComma = s.lastIndexOf(',');
   let intPart = s;
@@ -55,15 +56,15 @@ export function parseMinor(input: string, digits = 2): Minor {
   }
   if (intPart === '') intPart = '0';
   if (!/^\d+$/.test(intPart) || !/^\d*$/.test(fracPart)) {
-    throw new RangeError(`Неверная сумма: «${input}»`);
+    throw new RangeError(t('money.invalid', { input }));
   }
   if (fracPart.length > digits) {
     const extra = fracPart.slice(digits);
-    if (/[^0]/.test(extra)) throw new RangeError(`Слишком много знаков после запятой: «${input}»`);
+    if (/[^0]/.test(extra)) throw new RangeError(t('money.tooManyDigits', { input }));
     fracPart = fracPart.slice(0, digits);
   }
   const value = Number(intPart + fracPart.padEnd(digits, '0'));
-  if (!Number.isSafeInteger(value)) throw new RangeError(`Слишком большая сумма: «${input}»`);
+  if (!Number.isSafeInteger(value)) throw new RangeError(t('money.tooLarge', { input }));
   return negative && value !== 0 ? -value : value;
 }
 
@@ -84,12 +85,21 @@ export function toDecimalString(minor: Minor, digits = 2, decimalSep = '.'): str
   return (negative ? '-' : '') + int + (digits > 0 ? decimalSep + frac : '');
 }
 
-/** Форматирует для показа: 123456 → «1 234,56». Без float. */
+/** Разделители чисел по языку: «1 234,56» по-русски, «1,234.56» по-английски. */
+export function numberSeparators(lang: Lang = getLang()): { group: string; decimal: string } {
+  return lang === 'ru' ? { group: '\u00a0', decimal: ',' } : { group: ',', decimal: '.' };
+}
+
+/** Форматирует для показа: 123456 → «1 234,56» (ru) или «1,234.56» (en). Без float. */
 export function formatMinor(
   minor: Minor,
   digits = 2,
-  { group = '\u00a0', decimal = ',', trimZeros = false } = {},
+  opts: { group?: string; decimal?: string; trimZeros?: boolean } = {},
 ): string {
+  const defaults = numberSeparators();
+  const group = opts.group ?? defaults.group;
+  const decimal = opts.decimal ?? defaults.decimal;
+  const trimZeros = opts.trimZeros ?? false;
   const negative = minor < 0;
   const plain = toDecimalString(Math.abs(minor), digits, '.');
   const [rawInt, rawFrac = ''] = plain.split('.');
@@ -100,24 +110,26 @@ export function formatMinor(
 
 const symbolCache = new Map<string, string>();
 
-export function currencySymbol(currency: CurrencyCode): string {
-  const cached = symbolCache.get(currency);
+export function currencySymbol(currency: CurrencyCode, lang: Lang = getLang()): string {
+  const cacheKey = `${lang}:${currency}`;
+  const cached = symbolCache.get(cacheKey);
   if (cached) return cached;
   let symbol: string;
-  if (currency === 'KGS') symbol = 'сом';
+  if (currency === 'KGS' && lang === 'ru') symbol = 'сом';
   else {
     try {
-      const parts = new Intl.NumberFormat('ru', {
+      const parts = new Intl.NumberFormat(lang, {
         style: 'currency',
         currency,
-        currencyDisplay: 'narrowSymbol',
+        // По-английски — обычный символ: $ и € есть, у редких валют (KGS, KZT) — код.
+        currencyDisplay: lang === 'en' ? 'symbol' : 'narrowSymbol',
       }).formatToParts(0);
       symbol = parts.find((p) => p.type === 'currency')?.value ?? currency;
     } catch {
       symbol = currency;
     }
   }
-  symbolCache.set(currency, symbol);
+  symbolCache.set(cacheKey, symbol);
   return symbol;
 }
 
@@ -127,9 +139,13 @@ export function formatMoney(
   opts: { sign?: boolean; trimZeros?: boolean } = {},
 ): string {
   const digits = fractionDigits(currency);
-  const body = formatMinor(minor, digits, { trimZeros: opts.trimZeros ?? true });
-  const prefix = opts.sign && minor > 0 ? '+' : '';
-  return `${prefix}${body}\u00a0${currencySymbol(currency)}`;
+  const lang = getLang();
+  const symbol = currencySymbol(currency, lang);
+  const sign = minor < 0 ? '−' : opts.sign && minor > 0 ? '+' : '';
+  const body = formatMinor(Math.abs(minor), digits, { trimZeros: opts.trimZeros ?? true });
+  // По-английски знак валюты пишется перед суммой ($1,234.56), буквенный код — после (1,234.56 KGS).
+  if (lang === 'en' && !/^[A-Za-z]+$/.test(symbol)) return `${sign}${symbol}${body}`;
+  return `${sign}${body}\u00a0${symbol}`;
 }
 
 export const COMMON_CURRENCIES: CurrencyCode[] = [

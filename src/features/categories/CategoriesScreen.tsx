@@ -10,8 +10,10 @@ import { IconBadge } from '../../ui/Icon';
 import { Screen } from '../../ui/Screen';
 import { navigate } from '../../app/router';
 import { CategoryForm } from './CategoryForm';
+import { useT } from '../../i18n';
 
 export function CategoriesScreen() {
+  const t = useT();
   const categories = useData((s) => s.categories);
   const saveCategories = useData((s) => s.saveCategories);
   const [kind, setKind] = useState<CategoryKind>('expense');
@@ -30,27 +32,27 @@ export function CategoriesScreen() {
 
   return (
     <Screen
-      title="Категории"
+      title={t('nav.categories')}
       onBack={() => navigate('more')}
       actions={
-        <IconButton label="Добавить категорию" onClick={() => setEditing('new')}>
+        <IconButton label={t('category.add')} onClick={() => setEditing('new')}>
           <Plus />
         </IconButton>
       }
       header={
         <SegmentedControl
-          label="Тип категорий"
+          label={t('category.kindLabel')}
           value={kind}
           options={[
-            { value: 'expense', label: 'Расходы' },
-            { value: 'income', label: 'Доходы' },
+            { value: 'expense', label: t('common.expenses') },
+            { value: 'income', label: t('common.incomes') },
           ]}
           onChange={setKind}
         />
       }
     >
       {tree.length === 0 ? (
-        <EmptyState title="Нет категорий" text="Добавьте первую категорию кнопкой «+»." />
+        <EmptyState title={t('category.empty')} text={t('category.emptyText')} />
       ) : (
         <div className="flex flex-col gap-4">
           <SortableList
@@ -67,7 +69,7 @@ export function CategoriesScreen() {
           {archived.length > 0 && (
             <details>
               <summary className="min-h-11 cursor-pointer py-2 font-medium text-muted">
-                Скрытые ({archived.length})
+                {t('category.hiddenList', { count: archived.length })}
               </summary>
               <ul className="flex flex-col gap-px overflow-hidden rounded-xl">
                 {archived.map(({ parent }) => (
@@ -83,16 +85,13 @@ export function CategoriesScreen() {
               variant="secondary"
               onClick={async () => {
                 await saveCategories(missingSubs);
-                toast({ text: `Добавлено подкатегорий: ${missingSubs.length}` });
+                toast({ text: t('category.subsAdded', { count: missingSubs.length }) });
               }}
             >
-              Добавить стандартные подкатегории ({missingSubs.length})
+              {t('category.addDefaultSubs', { count: missingSubs.length })}
             </Button>
           )}
-          <p className="text-center text-sm text-muted">
-            Порядок меняется перетаскиванием за ручку или кнопками со стрелками. Подкатегории
-            редактируются в карточке категории.
-          </p>
+          <p className="text-center text-sm text-muted">{t('category.orderHint')}</p>
         </div>
       )}
       {editing && (
@@ -143,6 +142,7 @@ function SortableList({
   renderChildren?: (c: Category) => React.ReactNode;
   nested?: boolean;
 }) {
+  const t = useT();
   const [preview, setPreview] = useState<Category[] | null>(null);
   const rowRefs = useRef(new Map<string, HTMLLIElement>());
   const dragging = useRef<Category | null>(null);
@@ -207,14 +207,14 @@ function SortableList({
             </span>
             <CategoryButton category={c} onOpen={onOpen} />
             <IconButton
-              label={`Поднять «${c.name}»`}
+              label={t('category.moveUp', { name: c.name })}
               disabled={index === 0}
               onClick={() => onMove(c, index - 1)}
             >
               <ArrowUp size={18} />
             </IconButton>
             <IconButton
-              label={`Опустить «${c.name}»`}
+              label={t('category.moveDown', { name: c.name })}
               disabled={index === list.length - 1}
               onClick={() => onMove(c, index + 1)}
             >

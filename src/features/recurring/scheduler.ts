@@ -4,6 +4,7 @@ import { formatMoney } from '../../domain/money';
 import type { RecurringRule, Timestamp, Transaction } from '../../domain/types';
 import { useData } from '../../stores/dataStore';
 import { showNotification } from './notifications';
+import { t } from '../../i18n';
 
 export function transactionFromRule(
   rule: RecurringRule,
@@ -67,7 +68,7 @@ export async function runScheduler(now = Date.now()): Promise<number> {
     } else if ((rule.lastNotifiedAt ?? 0) < rule.nextDate) {
       if (settings.notificationsEnabled) {
         await showNotification(
-          'Регулярный платёж',
+          t('recurring.title'),
           `${rule.name}: ${formatMoney(rule.template.amount, rule.template.currency)}`,
           `rule-${rule.id}`,
         );

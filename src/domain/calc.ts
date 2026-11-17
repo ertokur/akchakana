@@ -1,4 +1,5 @@
 import type { Minor } from './types';
+import { t as tr } from '../i18n';
 
 /**
  * Калькулятор для ввода суммы. Значения хранятся как BigInt в минимальных единицах,
@@ -19,7 +20,7 @@ function toScaled(token: string, digits: number): bigint {
 }
 
 function divRoundHalfEven(a: bigint, b: bigint): bigint {
-  if (b === 0n) throw new RangeError('Деление на ноль');
+  if (b === 0n) throw new RangeError(tr('calc.divByZero'));
   const negative = a < 0n !== b < 0n;
   const absA = a < 0n ? -a : a;
   const absB = b < 0n ? -b : b;
@@ -50,7 +51,7 @@ export function tokenize(expr: string): string[] {
     } else if (/[\d.,]/.test(ch)) {
       num += ch;
     } else {
-      throw new RangeError(`Недопустимый символ «${ch}»`);
+      throw new RangeError(tr('calc.badChar', { ch }));
     }
   }
   if (num !== '' && num !== '-') tokens.push(num);
@@ -66,7 +67,7 @@ export function evaluate(expr: string, digits = 2): Minor {
   let i = 0;
   const readNumber = (): bigint => {
     const t = tokens[i++];
-    if (t === undefined || isOp(t)) throw new RangeError('Ожидалось число');
+    if (t === undefined || isOp(t)) throw new RangeError(tr('calc.expectedNumber'));
     return toScaled(t, digits);
   };
   // Сначала * и /, затем + и -.
@@ -90,7 +91,7 @@ export function evaluate(expr: string, digits = 2): Minor {
     result = sign === '+' ? result + terms[k + 1] : result - terms[k + 1];
   });
   const n = Number(result);
-  if (!Number.isSafeInteger(n)) throw new RangeError('Слишком большая сумма');
+  if (!Number.isSafeInteger(n)) throw new RangeError(tr('calc.tooLarge'));
   return n;
 }
 

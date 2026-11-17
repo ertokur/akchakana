@@ -1,35 +1,37 @@
 import { Check, Delete } from 'lucide-react';
 import { useEffect } from 'react';
+import { useT, type DictKey } from '../../i18n';
+import { numberSeparators } from '../../domain/money';
 
 type Key = string;
 
-const ROWS: { key: Key; label: string; aria?: string; kind?: 'op' | 'action' }[][] = [
+const ROWS: { key: Key; label: string; aria?: DictKey; kind?: 'op' | 'action' }[][] = [
   [
-    { key: '/', label: '÷', aria: 'Разделить', kind: 'op' },
-    { key: '*', label: '×', aria: 'Умножить', kind: 'op' },
-    { key: '-', label: '−', aria: 'Минус', kind: 'op' },
-    { key: '+', label: '+', aria: 'Плюс', kind: 'op' },
+    { key: '/', label: '÷', aria: 'calc.divide', kind: 'op' },
+    { key: '*', label: '×', aria: 'calc.multiply', kind: 'op' },
+    { key: '-', label: '−', aria: 'calc.minus', kind: 'op' },
+    { key: '+', label: '+', aria: 'calc.plus', kind: 'op' },
   ],
   [
     { key: '7', label: '7' },
     { key: '8', label: '8' },
     { key: '9', label: '9' },
-    { key: 'back', label: '', aria: 'Стереть', kind: 'action' },
+    { key: 'back', label: '', aria: 'common.backspace', kind: 'action' },
   ],
   [
     { key: '4', label: '4' },
     { key: '5', label: '5' },
     { key: '6', label: '6' },
-    { key: '=', label: '=', aria: 'Вычислить', kind: 'op' },
+    { key: '=', label: '=', aria: 'calc.equals', kind: 'op' },
   ],
   [
     { key: '1', label: '1' },
     { key: '2', label: '2' },
     { key: '3', label: '3' },
-    { key: 'clear', label: 'C', aria: 'Очистить', kind: 'action' },
+    { key: 'clear', label: 'C', aria: 'calc.clear', kind: 'action' },
   ],
   [
-    { key: '.', label: ',', aria: 'Запятая' },
+    { key: '.', label: ',', aria: 'calc.decimal' },
     { key: '0', label: '0' },
     { key: '00', label: '00' },
   ],
@@ -74,6 +76,8 @@ export function CalcKeypad({
   submitLabel: string;
   submitDisabled?: boolean;
 }) {
+  const t = useT();
+  const decimal = numberSeparators().decimal;
   // Физическая клавиатура (десктоп): цифры, операции, Backspace, Enter.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -92,16 +96,16 @@ export function CalcKeypad({
   }, [onKey, onSubmit]);
 
   return (
-    <div className="grid grid-cols-4 gap-1.5" role="group" aria-label="Калькулятор">
+    <div className="grid grid-cols-4 gap-1.5" role="group" aria-label={t('calc.keypad')}>
       {ROWS.flat().map((k) => (
         <button
           key={k.key}
           type="button"
-          aria-label={k.aria ?? k.label}
+          aria-label={k.aria ? t(k.aria) : k.label}
           onClick={() => onKey(k.key)}
           className={`tabular flex min-h-11 items-center justify-center rounded-xl text-xl font-medium active:brightness-90 ${k.kind === 'op' ? 'bg-accent-soft text-accent-strong' : k.kind === 'action' ? 'bg-surface-2 text-muted' : 'bg-surface-2 text-text'}`}
         >
-          {k.key === 'back' ? <Delete size={22} /> : k.label}
+          {k.key === 'back' ? <Delete size={22} /> : k.key === '.' ? decimal : k.label}
         </button>
       ))}
       <button

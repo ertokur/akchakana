@@ -4,7 +4,8 @@ import { useData } from '../../stores/dataStore';
 import { useUi } from '../../stores/uiStore';
 import { Button } from '../../ui/controls';
 import { useNow } from '../shared/hooks';
-import { SAVE_RESULT_TEXT, saveBackupFile } from './backup';
+import { saveBackupFile, saveResultText } from './backup';
+import { useT } from '../../i18n';
 import { shouldOfferBackupFile } from './schedule';
 
 const DAY_MS = 86_400_000;
@@ -15,6 +16,7 @@ const DAY_MS = 86_400_000;
  * (Google Диск, «Файлы») или скачивание.
  */
 export function BackupBanner() {
+  const t = useT();
   const settings = useData((s) => s.settings);
   const transactions = useData((s) => s.transactions);
   const accounts = useData((s) => s.accounts);
@@ -32,9 +34,9 @@ export function BackupBanner() {
     setBusy(true);
     try {
       const result = await saveBackupFile();
-      if (result !== 'cancelled') toast({ text: SAVE_RESULT_TEXT[result] });
+      if (result !== 'cancelled') toast({ text: saveResultText(result) });
     } catch (e) {
-      toast({ text: `Не удалось сохранить копию: ${(e as Error).message}`, tone: 'error' });
+      toast({ text: t('backup.failed', { error: (e as Error).message }), tone: 'error' });
     } finally {
       setBusy(false);
     }
@@ -42,25 +44,22 @@ export function BackupBanner() {
 
   return (
     <section
-      aria-label="Резервная копия"
+      aria-label={t('backup.bannerLabel')}
       className="mb-4 rounded-2xl border border-accent bg-surface p-3"
     >
       <div className="flex gap-2">
         <DatabaseBackup size={20} aria-hidden="true" className="mt-0.5 shrink-0 text-accent" />
-        <p className="text-sm">
-          Пора сохранить резервную копию. Выберите, куда положить файл: Google Диск, «Файлы»,
-          «Загрузки» или мессенджер.
-        </p>
+        <p className="text-sm">{t('backup.banner')}</p>
       </div>
       <div className="mt-2 flex gap-2">
         <Button className="flex-1" disabled={busy} onClick={save}>
-          Сохранить копию
+          {t('backup.save')}
         </Button>
         <Button
           variant="secondary"
           onClick={() => updateSettings({ autoBackupSnoozedUntil: now + DAY_MS })}
         >
-          Завтра
+          {t('backup.tomorrow')}
         </Button>
       </div>
     </section>

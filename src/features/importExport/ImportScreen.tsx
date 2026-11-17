@@ -8,7 +8,8 @@ import { getRepositories } from '../../repositories';
 import { applyImportPlan } from '../../importers/apply';
 import {
   analyzeCsv,
-  CSV_FIELD_LABELS,
+  CSV_FIELDS,
+  csvFieldLabel,
   DATE_FORMATS,
   detectDateFormat,
   guessMapping,
@@ -27,6 +28,7 @@ import { useUi } from '../../stores/uiStore';
 import { Button, Card, Field, Select, Toggle } from '../../ui/controls';
 import { Screen } from '../../ui/Screen';
 import { ImportSummary } from './ImportSummary';
+import { useT } from '../../i18n';
 
 type Step =
   | { kind: 'pick' }
@@ -36,11 +38,12 @@ type Step =
 
 const ENCODING_LABELS: Record<string, string> = {
   'utf-8': 'UTF-8',
-  'utf-8-bom': 'UTF-8 с BOM',
+  'utf-8-bom': 'UTF-8 BOM',
   'windows-1251': 'Windows-1251',
 };
 
 export function ImportScreen() {
+  const t = useT();
   const settings = useData((s) => s.settings);
   const [step, setStep] = useState<Step>({ kind: 'pick' });
   const [error, setError] = useState<string | null>(null);
@@ -64,12 +67,12 @@ export function ImportScreen() {
       } else {
         const csv = parseCsv(detected.text);
         if (csv.headers.length < 2 || csv.rows.length === 0) {
-          return setError('Не удалось прочитать таблицу: нужен заголовок и хотя бы одна строка');
+          return setError(t('import.err.noTable2'));
         }
         setStep({ kind: 'csv', csv, encoding: detected.encoding });
       }
     } catch (e) {
-      setError(`Не удалось прочитать файл: ${(e as Error).message}`);
+      setError(t('import.err.readFailed', { message: (e as Error).message }));
     } finally {
       setBusy(false);
       if (fileRef.current) fileRef.current.value = '';
@@ -80,18 +83,14 @@ export function ImportScreen() {
 
   return (
     <Screen
-      title="Импорт"
+      title={t('more.import')}
       onBack={settings.onboarded ? () => navigate('more') : () => navigate('home')}
     >
       {step.kind === 'pick' && (
         <div className="flex flex-col gap-4">
           <Card className="flex flex-col gap-3">
-            <h2 className="font-semibold">Импорт данных</h2>
-            <p className="text-sm text-muted">
-              Формат определяется по содержимому файла: резервная копия (база SQLite, обычно без
-              расширения), CSV, экспортированный из этого приложения, или CSV из другого источника.
-              Файл только читается и не покидает устройство.
-            </p>
+            <h2 className="font-semibold">{t('import.pickTitle')}</h2>
+            <p className="text-sm text-muted">{t('import.pickText')}</p>
             <input
               ref={fileRef}
               type="file"
@@ -106,7 +105,8 @@ export function ImportScreen() {
               htmlFor="import-file"
               className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent px-4 font-semibold text-accent-fg"
             >
-              <FileUp size={20} aria-hidden="true" /> {busy ? 'Читаю файл…' : 'Выбрать файл'}
+              <FileUp size={20} aria-hidden="true" />{' '}
+              {busy ? t('import.reading') : t('import.chooseFile')}
             </label>
             {error && (
               <p role="alert" className="text-sm font-medium text-expense">
@@ -114,15 +114,12 @@ export function ImportScreen() {
               </p>
             )}
           </Card>
-          <Card className="text-sm text-muted">
-            Чтобы перенести данные из другого приложения учёта, сохраните в нём резервную копию на
-            телефон и выберите файл здесь.
-          </Card>
+          <Card className="text-sm text-muted">{t('import.howToBackup')}</Card>
         </div>
       )}
       {step.kind === 'backup' && <BackupStep step={step} onChange={setStep} onCancel={reset} />}
       {step.kind === 'own' && (
-        <Confirm plan={step.plan} title="Файл этого приложения" onCancel={reset} />
+        <Confirm plan={step.plan} title={t('import.ownFile')} onCancel={reset} />
       )}
       {step.kind === 'csv' && <CsvSteps csv={step.csv} encoding={step.encoding} onCancel={reset} />}
     </Screen>
@@ -138,6 +135,7 @@ function BackupStep({
   onChange: (s: Step) => void;
   onCancel: () => void;
 }) {
+  const t = useT();
   const plan = useMemo(
     () => parseSqliteBackup(step.SQL, step.bytes, { currency: step.currency }),
     [step.SQL, step.bytes, step.currency],
@@ -148,14 +146,11 @@ function BackupStep({
   return (
     <Confirm
       plan={plan}
-      title="Резервная копия"
+      title={t('import.otherAppBackup')}
       onCancel={onCancel}
       before={
         <Card className="flex flex-col gap-2">
-          <Field
-            label="Валюта копии"
-            hint="В резервной копии валюта не указана. Все счета и операции получат выбранную валюту."
-          >
+          <Field label={t('import.backupCurrency')} hint={t('import.backupCurrencyHint')}>
             {(id) => (
               <Select
                 id={id}
@@ -185,6 +180,7 @@ function Confirm({
   onCancel: () => void;
   before?: React.ReactNode;
 }) {
+  const t = useT();
   const settings = useData((s) => s.settings);
   const load = useData((s) => s.load);
   const updateSettings = useData((s) => s.updateSettings);
@@ -208,10 +204,10 @@ function Confirm({
         await useData.getState().saveCategories(defaultCategories());
       }
       if (!settings.onboarded) await updateSettings({ onboarded: true });
-      toast({ text: `Импортировано операций: ${plan.transactions.length}` });
+      toast({ text: t('import.done', { count: plan.transactions.length }) });
       navigate('home');
     } catch (e) {
-      toast({ text: `Импорт не выполнен: ${(e as Error).message}`, tone: 'error' });
+      toast({ text: t('import.failed', { message: (e as Error).message }), tone: 'error' });
     } finally {
       setBusy(false);
     }
@@ -222,15 +218,13 @@ function Confirm({
       <h2 className="text-lg font-semibold">{title}</h2>
       {before}
       <ImportSummary plan={plan} timeZone={settings.timeZone} />
-      <p className="text-sm text-muted">
-        Записи с теми же идентификаторами будут обновлены, остальные данные не изменятся.
-      </p>
+      <p className="text-sm text-muted">{t('import.updateHint')}</p>
       <div className="flex gap-2">
         <Button variant="secondary" onClick={onCancel}>
-          Отмена
+          {t('common.cancel')}
         </Button>
         <Button block disabled={busy || total === 0} onClick={run}>
-          {busy ? 'Импортирую…' : 'Импортировать'}
+          {busy ? t('import.importing') : t('import.run')}
         </Button>
       </div>
     </div>
@@ -246,6 +240,7 @@ function CsvSteps({
   encoding: string;
   onCancel: () => void;
 }) {
+  const t = useT();
   const accounts = useData((s) => s.accounts);
   const categories = useData((s) => s.categories);
   const transactions = useData((s) => s.transactions);
@@ -311,17 +306,14 @@ function CsvSteps({
       <div className="flex flex-col gap-4">
         {(discovery.missingAccounts.length > 0 || discovery.missingCategories.length > 0) && (
           <Card className="flex flex-col gap-1">
-            <h2 className="font-semibold">Новые счета и категории</h2>
-            <p className="text-sm text-muted">
-              В файле есть названия, которых нет в приложении. Отмеченные будут созданы; строки с
-              неотмеченными попадут в ошибки.
-            </p>
+            <h2 className="font-semibold">{t('import.newItems')}</h2>
+            <p className="text-sm text-muted">{t('import.newItemsHint')}</p>
             {discovery.missingAccounts.map((name) => (
               <Toggle
                 key={`a-${name}`}
                 checked={!skipAccounts.has(name)}
                 onChange={() => toggle(skipAccounts, name, setSkipAccounts)}
-                label={`Счёт «${name}»`}
+                label={t('import.newAccount', { name })}
               />
             ))}
             {discovery.missingCategories.map((c) => {
@@ -331,7 +323,12 @@ function CsvSteps({
                   key={`c-${key}`}
                   checked={!skipCategories.has(key)}
                   onChange={() => toggle(skipCategories, key, setSkipCategories)}
-                  label={`Категория «${c.name}» (${c.kind === 'expense' ? 'расход' : 'доход'})`}
+                  label={t(
+                    c.kind === 'expense' ? 'import.newExpenseCategory' : 'import.newIncomeCategory',
+                    {
+                      name: c.name,
+                    },
+                  )}
                 />
               );
             })}
@@ -341,13 +338,17 @@ function CsvSteps({
           <Toggle
             checked={includeDuplicates}
             onChange={setIncludeDuplicates}
-            label="Импортировать дубликаты"
-            description="Дубликат — та же дата, сумма, счёт и заметка. По умолчанию пропускаются."
+            label={t('import.duplicates')}
+            description={t('import.duplicatesHint')}
           />
         </Card>
-        <Confirm plan={analysis.plan} title="Проверка CSV" onCancel={() => setReviewing(false)} />
+        <Confirm
+          plan={analysis.plan}
+          title={t('import.csvReview')}
+          onCancel={() => setReviewing(false)}
+        />
         <Button variant="ghost" onClick={onCancel}>
-          Выбрать другой файл
+          {t('import.otherFile')}
         </Button>
       </div>
     );
@@ -357,15 +358,21 @@ function CsvSteps({
   return (
     <div className="flex flex-col gap-4">
       <Card className="text-sm text-muted">
-        Строк: {csv.rows.length} · разделитель «{csv.delimiter}» · кодировка{' '}
-        {ENCODING_LABELS[encoding] ?? encoding}
+        {t('import.csvInfo', {
+          rows: csv.rows.length,
+          delimiter: csv.delimiter,
+          encoding: ENCODING_LABELS[encoding] ?? encoding,
+        })}
       </Card>
       <Card className="flex flex-col gap-3">
-        <h2 className="font-semibold">Сопоставьте колонки</h2>
+        <h2 className="font-semibold">{t('import.mapColumns')}</h2>
         {csv.headers.map((h, i) => (
           <Field
             key={i}
-            label={`«${h || `Колонка ${i + 1}`}» — например, ${preview[0]?.[i] || '—'}`}
+            label={t('import.columnLabel', {
+              name: h || t('import.column', { n: i + 1 }),
+              example: preview[0]?.[i] || '—',
+            })}
           >
             {(id) => (
               <Select
@@ -383,9 +390,9 @@ function CsvSteps({
                   setMapping(next);
                 }}
               >
-                {Object.entries(CSV_FIELD_LABELS).map(([k, label]) => (
+                {CSV_FIELDS.map((k) => (
                   <option key={k} value={k}>
-                    {label}
+                    {csvFieldLabel(k)}
                   </option>
                 ))}
               </Select>
@@ -395,8 +402,10 @@ function CsvSteps({
       </Card>
       <Card className="flex flex-col gap-3">
         <Field
-          label="Формат дат"
-          hint={detectedFormat ? `Определён автоматически: ${detectedFormat}` : undefined}
+          label={t('import.dateFormat')}
+          hint={
+            detectedFormat ? t('import.dateFormatDetected', { format: detectedFormat }) : undefined
+          }
         >
           {(id) => (
             <Select
@@ -411,14 +420,16 @@ function CsvSteps({
           )}
         </Field>
         {!mapping.includes('account') && (
-          <Field label="Счёт для всех операций">
+          <Field label={t('import.accountForAll')}>
             {(id) => (
               <Select
                 id={id}
                 value={defaultAccountId}
                 onChange={(e) => setDefaultAccountId(e.target.value)}
               >
-                {activeAccounts.length === 0 && <option value="">Сначала создайте счёт</option>}
+                {activeAccounts.length === 0 && (
+                  <option value="">{t('import.createAccountFirst')}</option>
+                )}
                 {activeAccounts.map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.name} ({a.currency})
@@ -429,7 +440,7 @@ function CsvSteps({
           </Field>
         )}
         {mapping.includes('account') && !mapping.includes('currency') && (
-          <Field label="Валюта новых счетов">
+          <Field label={t('import.newAccountsCurrency')}>
             {(id) => (
               <Select id={id} value={currency} onChange={(e) => setCurrency(e.target.value)}>
                 {COMMON_CURRENCIES.map((c) => (
@@ -441,14 +452,14 @@ function CsvSteps({
         )}
       </Card>
       <Card>
-        <h2 className="mb-2 font-semibold">Первые строки</h2>
+        <h2 className="mb-2 font-semibold">{t('import.firstRows')}</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
               <tr>
                 {csv.headers.map((_, i) => (
                   <th key={i} className="px-2 py-1 font-medium whitespace-nowrap text-muted">
-                    {CSV_FIELD_LABELS[mapping[i]]}
+                    {csvFieldLabel(mapping[i])}
                   </th>
                 ))}
               </tr>
@@ -472,14 +483,14 @@ function CsvSteps({
       </Card>
       <div className="flex gap-2">
         <Button variant="secondary" onClick={onCancel}>
-          Отмена
+          {t('common.cancel')}
         </Button>
         <Button
           block
           disabled={!mapping.includes('date') || !mapping.includes('amount')}
           onClick={() => setReviewing(true)}
         >
-          Далее
+          {t('import.next')}
         </Button>
       </div>
     </div>

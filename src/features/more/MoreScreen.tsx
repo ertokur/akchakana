@@ -12,26 +12,23 @@ import {
 import { navigate, type Route } from '../../app/router';
 import { MadeWith } from '../../ui/MadeWith';
 import { Screen } from '../../ui/Screen';
+import { useT, type DictKey } from '../../i18n';
 
-const ITEMS: { route: Route; label: string; hint: string; icon: typeof Shapes }[] = [
-  { route: 'budgets', label: 'Бюджеты', hint: 'Лимиты на месяц', icon: Target },
-  { route: 'categories', label: 'Категории', hint: 'Порядок, подкатегории, скрытие', icon: Shapes },
-  { route: 'recurring', label: 'Регулярные платежи', hint: 'Подписки и напоминания', icon: Repeat },
-  { route: 'debts', label: 'Долги', hint: 'Мне должны и я должен', icon: HandCoins },
-  { route: 'import', label: 'Импорт', hint: 'Резервная копия или CSV', icon: Upload },
-  { route: 'export', label: 'Экспорт', hint: 'Сохранить все данные в CSV', icon: Download },
-  { route: 'settings', label: 'Настройки', hint: 'Валюта, тема, PIN-код', icon: Settings },
-  {
-    route: 'changelog',
-    label: 'Что нового',
-    hint: 'Список изменений по версиям',
-    icon: Sparkles,
-  },
+const ITEMS: { route: Route; label: DictKey; hint: DictKey; icon: typeof Shapes }[] = [
+  { route: 'budgets', label: 'more.budgets', hint: 'more.budgetsHint', icon: Target },
+  { route: 'categories', label: 'nav.categories', hint: 'more.categoriesHint', icon: Shapes },
+  { route: 'recurring', label: 'more.recurring', hint: 'more.recurringHint', icon: Repeat },
+  { route: 'debts', label: 'more.debts', hint: 'more.debtsHint', icon: HandCoins },
+  { route: 'import', label: 'more.import', hint: 'more.importHint', icon: Upload },
+  { route: 'export', label: 'more.export', hint: 'more.exportHint', icon: Download },
+  { route: 'settings', label: 'more.settings', hint: 'more.settingsHint', icon: Settings },
+  { route: 'changelog', label: 'more.changelog', hint: 'more.changelogHint', icon: Sparkles },
 ];
 
 export function MoreScreen() {
+  const t = useT();
   return (
-    <Screen title="Ещё">
+    <Screen title={t('nav.more')}>
       {/* Колонка на всю высоту экрана, чтобы подпись стояла в самом низу. */}
       <div className="flex min-h-[calc(100dvh-11rem)] flex-col">
         <ul className="flex flex-col gap-px overflow-hidden rounded-xl">
@@ -46,8 +43,8 @@ export function MoreScreen() {
                   <Icon size={20} aria-hidden="true" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block font-medium">{label}</span>
-                  <span className="block truncate text-sm text-muted">{hint}</span>
+                  <span className="block font-medium">{t(label)}</span>
+                  <span className="block truncate text-sm text-muted">{t(hint)}</span>
                 </span>
                 <ChevronRight size={20} className="text-muted" aria-hidden="true" />
               </button>
@@ -56,7 +53,9 @@ export function MoreScreen() {
         </ul>
         <div className="mt-auto flex flex-col items-center gap-1 pt-8 pb-2">
           <MadeWith className="" />
-          <p className="tabular text-xs text-muted">Версия {__APP_VERSION__.replace(/\.0$/, '')}</p>
+          <p className="tabular text-xs text-muted">
+            {t('more.version', { version: __APP_VERSION__.replace(/\.0$/, '') })}
+          </p>
         </div>
       </div>
     </Screen>

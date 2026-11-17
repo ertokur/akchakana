@@ -12,18 +12,19 @@ import '@fontsource/inter/cyrillic-700.css';
 import './styles/index.css';
 import { App } from './app/App';
 import { useUi } from './stores/uiStore';
+import { t } from './i18n';
 
 // Service worker: офлайн-работа и обновление по согласию пользователя.
 const updateSW = registerSW({
   onNeedRefresh() {
     useUi.getState().toast({
-      text: 'Доступна новая версия',
+      text: t('pwa.updateAvailable'),
       duration: 60_000,
-      action: { label: 'Обновить', run: () => void updateSW(true) },
+      action: { label: t('pwa.update'), run: () => void updateSW(true) },
     });
   },
   onOfflineReady() {
-    useUi.getState().toast({ text: 'Приложение готово к работе без интернета' });
+    useUi.getState().toast({ text: t('pwa.offlineReady') });
   },
 });
 

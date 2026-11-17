@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, type ReactNode } from 're
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { IconButton } from './controls';
+import { useT } from '../i18n';
 
 /**
  * Открытые шторки. Escape закрывает только верхнюю. Вложенная шторка монтируется раньше
@@ -42,6 +43,7 @@ export function BottomSheet({
   const panelRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ startY: number; dy: number } | null>(null);
   const depth = useContext(SheetDepth);
+  const t = useT();
   const onCloseRef = useRef(onClose);
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -118,7 +120,7 @@ export function BottomSheet({
         <div className="flex items-center gap-2 px-4 pb-2">
           <h2 className="flex-1 truncate text-lg font-semibold">{title}</h2>
           {headerExtra}
-          <IconButton label="Закрыть" onClick={onClose}>
+          <IconButton label={t('common.close')} onClick={onClose}>
             <X size={22} />
           </IconButton>
         </div>
@@ -141,7 +143,7 @@ export function ConfirmDialog({
   open,
   title,
   text,
-  confirmLabel = 'Удалить',
+  confirmLabel,
   danger = true,
   onConfirm,
   onCancel,
@@ -158,6 +160,7 @@ export function ConfirmDialog({
   children?: ReactNode;
   confirmDisabled?: boolean;
 }) {
+  const t = useT();
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onCancel();
@@ -183,7 +186,7 @@ export function ConfirmDialog({
             className="min-h-11 rounded-xl px-4 font-semibold text-accent hover:bg-accent-soft"
             onClick={onCancel}
           >
-            Отмена
+            {t('common.cancel')}
           </button>
           <button
             type="button"
@@ -191,7 +194,7 @@ export function ConfirmDialog({
             className={`min-h-11 rounded-xl px-4 font-semibold disabled:opacity-50 ${danger ? 'bg-expense text-white' : 'bg-accent text-accent-fg'}`}
             onClick={onConfirm}
           >
-            {confirmLabel}
+            {confirmLabel ?? t('common.delete')}
           </button>
         </div>
       </div>

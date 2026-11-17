@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { CloudOff, FileUp, Lock, ShieldCheck } from 'lucide-react';
 import { Icon } from '../../ui/Icon';
+import { useT } from '../../i18n';
 
 /*
  * Анимированные сценки для знакомства с приложением. Только CSS-анимации transform/opacity
@@ -31,6 +32,7 @@ const RING = [
 const RING_STARTS = RING.map((_, i) => RING.slice(0, i).reduce((sum, s) => sum + s.len + 1.2, 0));
 
 function MiniRing({ size = 112, animated = true }: { size?: number; animated?: boolean }) {
+  const t = useT();
   return (
     <svg width={size} height={size} viewBox="0 0 100 100">
       <circle cx="50" cy="50" r="38" fill="none" stroke="var(--app-surface-2)" strokeWidth="12" />
@@ -60,7 +62,7 @@ function MiniRing({ size = 112, animated = true }: { size?: number; animated?: b
         })}
       </g>
       <text x="50" y="47" textAnchor="middle" fontSize="8" fill="var(--app-muted)">
-        Расходы
+        {t('ill.expenses')}
       </text>
       <text
         x="50"
@@ -122,6 +124,7 @@ export function RingIllustration() {
 
 /** 2. Нажатие на категорию — и шторка с калькулятором. */
 export function QuickAddIllustration() {
+  const t = useT();
   return (
     <Stage>
       <div className="grid grid-cols-3 gap-4 pb-16">
@@ -144,11 +147,11 @@ export function QuickAddIllustration() {
       <div className="ob-sheet absolute inset-x-2 bottom-0 rounded-t-2xl border border-border bg-surface p-2 shadow-lg">
         <div className="mb-2 flex items-center gap-1.5">
           <span className="flex h-7 flex-1 items-center justify-center rounded-lg bg-[#1c7ed6] text-[0.625rem] font-semibold text-white">
-            Карта
+            {t('ill.card')}
           </span>
           <span className="text-xs text-muted">→</span>
           <span className="flex h-7 flex-1 items-center justify-center rounded-lg bg-[#e8590c] text-[0.625rem] font-semibold text-white">
-            Кафе
+            {t('ill.cafe')}
           </span>
         </div>
         <div className="tabular mb-2 text-right text-lg font-bold text-expense">1 250</div>
@@ -169,13 +172,14 @@ export function QuickAddIllustration() {
 
 /** 3. Счета, переводы и бюджеты. */
 export function AccountsIllustration() {
+  const t = useT();
   const accounts = [
-    { name: 'Карта', icon: 'credit-card', color: '#4f46e5', sum: '5 534' },
-    { name: 'Копилка', icon: 'piggy-bank', color: '#0ca678', sum: '120 000' },
+    { name: t('ill.card'), icon: 'credit-card', color: '#4f46e5', sum: '5 534' },
+    { name: t('ill.savings'), icon: 'piggy-bank', color: '#0ca678', sum: '120 000' },
   ];
   const budgets = [
-    { name: 'Продукты', color: '#2f9e44', ratio: 0.62 },
-    { name: 'Кафе', color: '#e8590c', ratio: 0.88 },
+    { name: t('ill.groceries'), color: '#2f9e44', ratio: 0.62 },
+    { name: t('ill.cafe'), color: '#e8590c', ratio: 0.88 },
   ];
   return (
     <Stage>
@@ -251,10 +255,11 @@ export function StatsIllustration() {
 
 /** 5. Данные только на устройстве, офлайн, импорт данных. */
 export function PrivacyIllustration() {
+  const t = useT();
   const badges = [
-    { icon: <CloudOff size={18} />, label: 'Офлайн', x: '6%', y: '14%' },
-    { icon: <Lock size={18} />, label: 'PIN-код', x: '66%', y: '10%' },
-    { icon: <FileUp size={18} />, label: 'Импорт', x: '62%', y: '72%' },
+    { icon: <CloudOff size={18} />, label: t('ill.offline'), x: '6%', y: '14%' },
+    { icon: <Lock size={18} />, label: t('ill.pin'), x: '66%', y: '10%' },
+    { icon: <FileUp size={18} />, label: t('ill.import'), x: '62%', y: '72%' },
   ];
   return (
     <Stage>

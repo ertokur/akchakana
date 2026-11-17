@@ -3,6 +3,7 @@ import { formatMoney } from '../../domain/money';
 import type { BudgetStatus } from '../../domain/budgets';
 import type { Category } from '../../domain/types';
 import { Icon } from '../../ui/Icon';
+import { useT } from '../../i18n';
 
 const SIZE = 52;
 
@@ -24,6 +25,7 @@ export function CategoryBubble({
   onTap: () => void;
   onLongPress: () => void;
 }) {
+  const t = useT();
   const timer = useRef<number | null>(null);
   const longPressed = useRef(false);
   const start = useRef<{ x: number; y: number } | null>(null);
@@ -49,7 +51,7 @@ export function CategoryBubble({
       type="button"
       className="flex min-w-0 flex-col items-center gap-1 rounded-xl px-0.5 py-1 select-none active:scale-95"
       style={{ transition: 'transform 120ms ease-out' }}
-      aria-label={`${category.name}: ${amountText}${budget ? `, бюджет ${Math.round(budget.ratio * 100)}%` : ''}. ${editing ? 'Изменить категорию' : category.kind === 'income' ? 'Добавить доход' : 'Добавить расход'}`}
+      aria-label={`${category.name}: ${amountText}${budget ? t('home.bubbleBudget', { percent: Math.round(budget.ratio * 100) }) : ''}. ${editing ? t('home.editCategory') : category.kind === 'income' ? t('home.addIncome') : t('home.addExpense')}`}
       onPointerDown={(e) => {
         longPressed.current = false;
         start.current = { x: e.clientX, y: e.clientY };

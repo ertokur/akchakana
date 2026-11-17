@@ -11,6 +11,7 @@ import {
   type Transaction,
 } from '../domain/types';
 import { getRepositories } from '../repositories';
+import { applyLanguageSetting } from '../i18n';
 
 /**
  * Данные приложения в памяти. Источник истины — репозитории (IndexedDB);
@@ -82,6 +83,7 @@ export const useData = create<DataState>((set, get) => ({
         r.debts.getAll(),
         r.settings.get(),
       ]);
+    applyLanguageSetting(settings.language);
     set({
       loaded: true,
       accounts,
@@ -96,6 +98,7 @@ export const useData = create<DataState>((set, get) => ({
 
   async updateSettings(patch) {
     const settings = await getRepositories().settings.update(patch);
+    applyLanguageSetting(settings.language);
     set({ settings });
   },
 

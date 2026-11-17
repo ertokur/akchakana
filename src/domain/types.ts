@@ -117,6 +117,8 @@ export interface Debt extends Entity {
   payments: { date: Timestamp; amount: Minor }[];
 }
 
+import type { LanguageSetting } from '../i18n';
+
 export type ThemeSetting = 'light' | 'dark' | 'system';
 
 export type BackupFrequency = 'daily' | 'weekly' | 'monthly';
@@ -135,6 +137,8 @@ export interface Settings {
   /** 0 — воскресенье, 1 — понедельник. */
   weekStartsOn: 0 | 1;
   theme: ThemeSetting;
+  /** Язык интерфейса: `system` — русский, если система на русском, иначе английский. */
+  language: LanguageSetting;
   pinHash?: string;
   pinSalt?: string;
   lastExportAt?: Timestamp;
@@ -161,6 +165,7 @@ export const DEFAULT_SETTINGS: Settings = {
   timeZone: 'Asia/Bishkek',
   weekStartsOn: 1,
   theme: 'system',
+  language: 'system',
   onboarded: false,
   notificationsEnabled: false,
   autoBackupEnabled: true,

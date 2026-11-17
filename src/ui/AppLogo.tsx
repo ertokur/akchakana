@@ -1,3 +1,5 @@
+import { useT } from '../i18n';
+
 /**
  * Логотип «Акчакана»: кольцо из сегментов (как круг расходов на главном экране) и монета в центре.
  * С `animated` сегменты прорисовываются по очереди, кольцо доворачивается, монета «выпрыгивает».
@@ -16,13 +18,14 @@ const STARTS = SEGMENTS.map((_, i) =>
 );
 
 export function AppLogo({ size = 96, animated = false }: { size?: number; animated?: boolean }) {
+  const t = useT();
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 120 120"
       role="img"
-      aria-label="Логотип Акчакана"
+      aria-label={t('logo.label')}
       className={animated ? 'ob-logo-float' : undefined}
     >
       <rect width="120" height="120" rx="30" fill="#4f46e5" />

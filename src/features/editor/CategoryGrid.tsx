@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import type { Category, CategoryKind, Id } from '../../domain/types';
 import { byOrder } from '../../stores/dataStore';
 import { IconBadge } from '../../ui/Icon';
+import { useT } from '../../i18n';
 
 /**
  * Сетка категорий верхнего уровня. Подкатегории выбираются уже в шторке
@@ -18,6 +19,7 @@ export function CategoryGrid({
   value?: Id;
   onChange: (id: Id) => void;
 }) {
+  const t = useT();
   const parents = useMemo(() => {
     const active = categories.filter((c) => c.kind === kind && (!c.archived || c.id === value));
     const ids = new Set(active.map((c) => c.id));
@@ -28,15 +30,11 @@ export function CategoryGrid({
   const selectedParentId = selected?.parentId ?? selected?.id;
 
   if (parents.length === 0) {
-    return (
-      <p className="py-4 text-center text-muted">
-        Нет категорий. Добавьте их в разделе «Категории».
-      </p>
-    );
+    return <p className="py-4 text-center text-muted">{t('editor.noCategories')}</p>;
   }
 
   return (
-    <div role="radiogroup" aria-label="Категория" className="grid grid-cols-4 gap-1">
+    <div role="radiogroup" aria-label={t('common.category')} className="grid grid-cols-4 gap-1">
       {parents.map((c) => {
         const checked = c.id === selectedParentId;
         return (

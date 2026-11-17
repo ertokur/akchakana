@@ -1,35 +1,35 @@
 import { useEffect, useState } from 'react';
 import { DatabaseBackup, Download } from 'lucide-react';
-import { formatInTz } from '../../domain/dates';
+import { formatDate } from '../../domain/dates';
+import { numberSeparators } from '../../domain/money';
 import type { BackupFrequency, BackupSnapshot, BackupTarget } from '../../domain/types';
 import { fileShareSupported, saveDialogSupported, saveFileAs } from '../../exporters/share';
+import { t as tr, useT } from '../../i18n';
 import { getRepositories } from '../../repositories';
 import { useData } from '../../stores/dataStore';
 import { useUi } from '../../stores/uiStore';
 import { Button, Field, IconButton, SegmentedControl, Select, Toggle } from '../../ui/controls';
-import {
-  pruneSnapshots,
-  requestPersistentStorage,
-  SAVE_RESULT_TEXT,
-  saveBackupFile,
-} from './backup';
+import { pruneSnapshots, requestPersistentStorage, saveBackupFile, saveResultText } from './backup';
 import { BACKUP_KEEP_OPTIONS, nextBackupAt } from './schedule';
 
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} Б`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} КБ`;
-  return `${(bytes / 1024 / 1024).toFixed(1).replace('.', ',')} МБ`;
+export function formatSize(bytes: number): string {
+  if (bytes < 1024) return tr('size.b', { n: bytes });
+  if (bytes < 1024 * 1024) return tr('size.kb', { n: Math.round(bytes / 1024) });
+  return tr('size.mb', {
+    n: (bytes / 1024 / 1024).toFixed(1).replace('.', numberSeparators().decimal),
+  });
 }
 
 /** Раздел «Резервные копии» в настройках. */
 export function AutoBackupSettings() {
+  const t = useT();
   const settings = useData((s) => s.settings);
   const updateSettings = useData((s) => s.updateSettings);
   const toast = useUi((s) => s.toast);
   const [snapshots, setSnapshots] = useState<BackupSnapshot[]>([]);
   const [busy, setBusy] = useState(false);
   const tz = settings.timeZone;
-  const fmt = (ts: number) => formatInTz(ts, tz, 'd MMMM yyyy, HH:mm');
+  const fmt = (ts: number) => formatDate(ts, tz, 'dayMonthYearTime');
 
   // Список перечитывается после новой копии и после ротации.
   const [version, setVersion] = useState(0);
@@ -54,9 +54,9 @@ export function AutoBackupSettings() {
     setBusy(true);
     try {
       const result = await saveBackupFile();
-      if (result !== 'cancelled') toast({ text: SAVE_RESULT_TEXT[result] });
+      if (result !== 'cancelled') toast({ text: saveResultText(result) });
     } catch (e) {
-      toast({ text: `Не удалось сохранить копию: ${(e as Error).message}`, tone: 'error' });
+      toast({ text: t('backup.failed', { error: (e as Error).message }), tone: 'error' });
     } finally {
       setBusy(false);
       reload();
@@ -65,7 +65,7 @@ export function AutoBackupSettings() {
 
   const saveSnapshot = async (s: BackupSnapshot) => {
     const result = await saveFileAs(s.content, s.fileName, settings.autoBackupTarget);
-    if (result !== 'cancelled') toast({ text: SAVE_RESULT_TEXT[result] });
+    if (result !== 'cancelled') toast({ text: saveResultText(result) });
   };
 
   return (
@@ -74,7 +74,7 @@ export function AutoBackupSettings() {
       className="flex flex-col gap-3 rounded-2xl bg-surface p-4"
     >
       <h2 id="backup-heading" className="flex items-center gap-2 font-semibold">
-        <DatabaseBackup size={18} aria-hidden="true" /> Резервные копии
+        <DatabaseBackup size={18} aria-hidden="true" /> {t('backup.title')}
       </h2>
       <Toggle
         checked={settings.autoBackupEnabled}
@@ -82,49 +82,52 @@ export function AutoBackupSettings() {
           if (on) requestPersistentStorage();
           void updateSettings({ autoBackupEnabled: on });
         }}
-        label="Автосохранение"
-        description="Копия внутри приложения по расписанию и напоминание сохранить файл"
+        label={t('backup.auto')}
+        description={t('backup.autoHint')}
       />
 
       {settings.autoBackupEnabled && (
         <>
           <div className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-muted">Как часто</span>
+            <span className="text-sm font-medium text-muted">{t('backup.frequency')}</span>
             <SegmentedControl<BackupFrequency>
-              label="Как часто"
+              label={t('backup.frequency')}
               size="sm"
               value={settings.autoBackupFrequency}
               options={[
-                { value: 'daily', label: 'Ежедневно' },
-                { value: 'weekly', label: 'Еженедельно' },
-                { value: 'monthly', label: 'Ежемесячно' },
+                { value: 'daily', label: t('backup.daily') },
+                { value: 'weekly', label: t('backup.weekly') },
+                { value: 'monthly', label: t('backup.monthly') },
               ]}
               onChange={(autoBackupFrequency) => void updateSettings({ autoBackupFrequency })}
             />
           </div>
           <div className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-muted">Куда сохранять файл</span>
+            <span className="text-sm font-medium text-muted">{t('backup.target')}</span>
             <SegmentedControl<BackupTarget>
-              label="Куда сохранять файл"
+              label={t('backup.target')}
               size="sm"
               value={settings.autoBackupTarget}
               options={[
-                { value: 'share', label: 'Выбрать приложение' },
-                { value: 'download', label: hasSaveDialog ? 'Выбрать папку' : 'В «Загрузки»' },
+                { value: 'share', label: t('backup.targetShare') },
+                {
+                  value: 'download',
+                  label: hasSaveDialog ? t('backup.targetFolder') : t('backup.targetDownloads'),
+                },
               ]}
               onChange={(autoBackupTarget) => void updateSettings({ autoBackupTarget })}
             />
             <p className="text-sm text-muted">
               {settings.autoBackupTarget === 'share'
                 ? canShare
-                  ? 'Откроется меню «Поделиться»: Google Диск, «Файлы» (на iPhone — «Сохранить в Файлы»), Telegram и т. п.'
-                  : 'Этот браузер не умеет делиться файлами — файл будет скачан.'
+                  ? t('backup.hintShare')
+                  : t('backup.hintNoShare')
                 : hasSaveDialog
-                  ? 'Браузер спросит, в какую папку и под каким именем сохранить файл.'
-                  : 'Файл скачается в папку «Загрузки» (Download) в памяти телефона.'}
+                  ? t('backup.hintFolder')
+                  : t('backup.hintDownloads')}
             </p>
           </div>
-          <Field label="Хранить копий внутри приложения">
+          <Field label={t('backup.keep')}>
             {(id) => (
               <Select
                 id={id}
@@ -148,39 +151,38 @@ export function AutoBackupSettings() {
       )}
 
       <div className="text-sm text-muted">
-        <p>
-          {lastFile ? `Последний файл копии: ${fmt(lastFile)}` : 'Файл копии ещё не сохранялся.'}
-        </p>
+        <p>{lastFile ? t('backup.lastFile', { date: fmt(lastFile) }) : t('backup.noFile')}</p>
         {settings.autoBackupEnabled && lastFile && (
           <p>
-            Следующее напоминание:{' '}
-            {formatInTz(
-              nextBackupAt(lastFile, settings.autoBackupFrequency, tz),
-              tz,
-              'd MMMM yyyy',
-            )}
+            {t('backup.next', {
+              date: formatDate(
+                nextBackupAt(lastFile, settings.autoBackupFrequency, tz),
+                tz,
+                'dayMonthYear',
+              ),
+            })}
           </p>
         )}
       </div>
 
       <Button block disabled={busy} onClick={saveNow}>
-        <Download size={20} aria-hidden="true" /> Сохранить копию сейчас
+        <Download size={20} aria-hidden="true" /> {t('backup.saveNow')}
       </Button>
 
       {snapshots.length > 0 && (
         <div>
-          <h3 className="mb-1 text-sm font-medium text-muted">Копии внутри приложения</h3>
-          <ul aria-label="Копии внутри приложения" className="flex flex-col">
+          <h3 className="mb-1 text-sm font-medium text-muted">{t('backup.snapshots')}</h3>
+          <ul aria-label={t('backup.snapshots')} className="flex flex-col">
             {snapshots.map((s) => (
               <li key={s.id} className="flex min-h-11 items-center gap-2">
                 <span className="flex-1 text-sm">
                   {fmt(s.createdAt)}
                   <span className="block text-muted">
-                    операций: {s.transactions} · {formatSize(s.size)}
+                    {t('backup.snapshotInfo', { count: s.transactions, size: formatSize(s.size) })}
                   </span>
                 </span>
                 <IconButton
-                  label={`Сохранить копию от ${fmt(s.createdAt)}`}
+                  label={t('backup.saveSnapshot', { date: fmt(s.createdAt) })}
                   onClick={() => void saveSnapshot(s)}
                 >
                   <Download size={18} aria-hidden="true" />
@@ -191,13 +193,7 @@ export function AutoBackupSettings() {
         </div>
       )}
 
-      <p className="text-sm text-muted">
-        Браузер не разрешает веб-приложению самому записывать файлы в память телефона, поэтому файл
-        копии сохраняется по вашему нажатию — туда, куда вы выберете. Копии внутри приложения
-        делаются сами, но хранятся в том же браузере: если очистить данные сайта или удалить
-        браузер, они пропадут вместе с остальными данными. Восстановить данные из файла: «Импорт» →
-        выбрать файл копии.
-      </p>
+      <p className="text-sm text-muted">{t('backup.explain')}</p>
     </section>
   );
 }

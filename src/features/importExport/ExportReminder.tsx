@@ -4,6 +4,7 @@ import { useData } from '../../stores/dataStore';
 import { Button } from '../../ui/controls';
 import { BackupBanner } from '../backup/BackupBanner';
 import { useNow } from '../shared/hooks';
+import { useT } from '../../i18n';
 
 const MONTH_MS = 30 * 86_400_000;
 
@@ -24,6 +25,7 @@ export function shouldRemindExport(
  * автосохранении напоминает баннер автосохранения (по его расписанию), иначе — раз в месяц.
  */
 export function ExportReminder() {
+  const t = useT();
   const settings = useData((s) => s.settings);
   const transactions = useData((s) => s.transactions);
   const updateSettings = useData((s) => s.updateSettings);
@@ -38,25 +40,22 @@ export function ExportReminder() {
   }
   return (
     <section
-      aria-label="Напоминание об экспорте"
+      aria-label={t('exportReminder.aria')}
       className="mb-4 rounded-2xl border border-warning bg-surface p-3"
     >
       <div className="flex gap-2">
         <DatabaseBackup size={20} aria-hidden="true" className="mt-0.5 shrink-0 text-warning" />
-        <p className="text-sm">
-          Данные хранятся только в браузере, и он может их очистить. Сохраните резервную копию — это
-          займёт минуту.
-        </p>
+        <p className="text-sm">{t('exportReminder.text')}</p>
       </div>
       <div className="mt-2 flex gap-2">
         <Button className="flex-1" onClick={() => navigate('export')}>
-          Экспортировать
+          {t('export.run')}
         </Button>
         <Button
           variant="secondary"
           onClick={() => updateSettings({ exportSnoozedUntil: now + 7 * 86_400_000 })}
         >
-          Через неделю
+          {t('exportReminder.snooze')}
         </Button>
       </div>
     </section>

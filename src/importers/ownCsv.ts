@@ -14,6 +14,7 @@ import type {
 import { normalizeBackupExternalId, normalizeRecord } from '../db/legacyIds';
 import { stripBom } from './encoding';
 import { emptyPlan, type ImportPlan } from './types';
+import { t as tr } from '../i18n';
 
 /**
  * Собственный формат CSV приложения: UTF-8 с BOM, разделитель «;», один файл со всеми данными.
@@ -94,7 +95,7 @@ export function parseOwnCsv(text: string): ImportPlan {
   });
   const [header, ...rows] = parsed.data;
   if (!header) {
-    plan.errors.push({ message: 'Пустой файл' });
+    plan.errors.push({ message: tr('import.err.emptyFile') });
     return plan;
   }
   const byTitle = new Map<string, OwnField>(OWN_COLUMNS.map(([field, title]) => [title, field]));
@@ -131,7 +132,7 @@ export function parseOwnCsv(text: string): ImportPlan {
           pending.push({ row, line });
           break;
         default:
-          throw new Error(`неизвестный тип записи «${row.type ?? ''}»`);
+          throw new Error(tr('import.own.unknownRecordType', { value: row.type ?? '' }));
       }
     } catch (e) {
       plan.errors.push({ row: line, message: (e as Error).message });
@@ -158,13 +159,14 @@ export function parseOwnCsv(text: string): ImportPlan {
 
 function required(row: OwnRow, field: OwnField, title: string): string {
   const v = row[field]?.trim();
-  if (!v) throw new Error(`не заполнено поле «${title}»`);
+  if (!v) throw new Error(tr('import.own.required', { field: title }));
   return v;
 }
 
 function money(value: string | undefined, currency: string, title: string): number {
   const parsed = tryParseMinor(value ?? '', fractionDigits(currency));
-  if (parsed === null) throw new Error(`неверная сумма в поле «${title}»: «${value ?? ''}»`);
+  if (parsed === null)
+    throw new Error(tr('import.own.badAmount', { field: title, value: value ?? '' }));
   return parsed;
 }
 
@@ -178,7 +180,8 @@ function optionalMoney(
 
 function date(value: string | undefined, title: string): number {
   const ts = Date.parse(value ?? '');
-  if (!Number.isFinite(ts)) throw new Error(`неверная дата в поле «${title}»: «${value ?? ''}»`);
+  if (!Number.isFinite(ts))
+    throw new Error(tr('import.own.badDate', { field: title, value: value ?? '' }));
   return ts;
 }
 
@@ -207,7 +210,7 @@ function meta(row: OwnRow) {
 function readAccount(row: OwnRow, kinds: Record<string, AccountKind>): Account {
   const currency = required(row, 'currency', 'Валюта');
   const kind = kinds[row.kind ?? ''];
-  if (!kind) throw new Error(`неизвестный вид счёта «${row.kind ?? ''}»`);
+  if (!kind) throw new Error(tr('import.own.unknownAccountKind', { value: row.kind ?? '' }));
   const creditLimit = optionalMoney(row.creditLimit, currency, 'Кредитный лимит');
   return {
     ...meta(row),
@@ -225,7 +228,7 @@ function readAccount(row: OwnRow, kinds: Record<string, AccountKind>): Account {
 
 function readCategory(row: OwnRow): Category {
   const kind = row.kind === 'расход' ? 'expense' : row.kind === 'доход' ? 'income' : null;
-  if (!kind) throw new Error(`неизвестный вид категории «${row.kind ?? ''}»`);
+  if (!kind) throw new Error(tr('import.own.unknownCategoryKind', { value: row.kind ?? '' }));
   const parentId = optional(row.parentId);
   return {
     ...meta(row),
@@ -242,8 +245,7 @@ function readCategory(row: OwnRow): Category {
 function readBudget(row: OwnRow): Budget {
   const currency = required(row, 'currency', 'Валюта');
   const startMonth = required(row, 'date', 'Дата');
-  if (!/^\d{4}-\d{2}$/.test(startMonth))
-    throw new Error(`месяц бюджета должен быть в виде ГГГГ-ММ`);
+  if (!/^\d{4}-\d{2}$/.test(startMonth)) throw new Error(tr('import.own.badBudgetMonth'));
   return {
     ...meta(row),
     categoryId: optional(row.categoryId) ?? null,
@@ -258,7 +260,7 @@ function readDebt(row: OwnRow): Debt {
   const currency = required(row, 'currency', 'Валюта');
   const direction =
     row.kind === 'мне должны' ? 'owedToMe' : row.kind === 'я должен' ? 'iOwe' : null;
-  if (!direction) throw new Error(`неизвестный вид долга «${row.kind ?? ''}»`);
+  if (!direction) throw new Error(tr('import.own.unknownDebtKind', { value: row.kind ?? '' }));
   const extra = JSON.parse(row.extra || '{}') as { settled?: boolean; payments?: Debt['payments'] };
   const accountId = optional(row.accountId);
   const dueDate = optional(row.date);
@@ -286,12 +288,13 @@ function splitTags(value: string | undefined): string[] {
 function readRecurring(row: OwnRow, kinds: Record<string, TransactionType>): RecurringRule {
   const currency = required(row, 'currency', 'Валюта');
   const type = kinds[row.kind ?? ''];
-  if (!type) throw new Error(`неизвестный вид операции «${row.kind ?? ''}»`);
+  if (!type) throw new Error(tr('import.own.unknownTxKind', { value: row.kind ?? '' }));
   const extra = JSON.parse(row.extra || '{}') as Pick<
     RecurringRule,
     'freq' | 'interval' | 'startDate' | 'endDate' | 'mode' | 'active' | 'lastNotifiedAt'
   >;
-  if (!extra.freq || !extra.startDate) throw new Error('нет параметров повтора в «Доп. данные»');
+  if (!extra.freq || !extra.startDate)
+    throw new Error(tr('import.own.noRecurrence', { field: 'Доп. данные' }));
   const toAccountId = optional(row.toAccountId);
   const categoryId = optional(row.categoryId);
   const toAmount = optionalMoney(row.toAmount, currency, 'Сумма зачисления');
@@ -321,10 +324,10 @@ function readTransaction(
 ): Transaction {
   const currency = required(row, 'currency', 'Валюта');
   const type = kinds[row.kind ?? ''];
-  if (!type) throw new Error(`неизвестный вид операции «${row.kind ?? ''}»`);
+  if (!type) throw new Error(tr('import.own.unknownTxKind', { value: row.kind ?? '' }));
   const toAccountId = optional(row.toAccountId);
   const categoryId = optional(row.categoryId);
-  if (type === 'transfer' && !toAccountId) throw new Error('у перевода не указан счёт-получатель');
+  if (type === 'transfer' && !toAccountId) throw new Error(tr('import.err.noTarget'));
   const targetCurrency = accounts.get(toAccountId ?? '')?.currency ?? currency;
   const toAmount = optionalMoney(row.toAmount, targetCurrency, 'Сумма зачисления');
   return {
@@ -349,11 +352,13 @@ function validateReferences(plan: ImportPlan) {
   const categories = new Set(plan.categories.map((c) => c.id));
   plan.transactions = plan.transactions.filter((t) => {
     if (!accounts.has(t.accountId) || (t.toAccountId && !accounts.has(t.toAccountId))) {
-      plan.errors.push({ message: `Операция ${t.id}: ссылка на отсутствующий счёт` });
+      plan.errors.push({ message: tr('import.own.missingAccount', { id: t.id }) });
       return false;
     }
     if (t.categoryId && !categories.has(t.categoryId)) {
-      plan.warnings.push(`Операция ${t.id}: категория ${t.categoryId} не найдена в файле`);
+      plan.warnings.push(
+        tr('import.own.missingCategory', { id: t.id, category: t.categoryId ?? '' }),
+      );
     }
     return true;
   });

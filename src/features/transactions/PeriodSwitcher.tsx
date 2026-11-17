@@ -5,12 +5,13 @@ import { BottomSheet } from '../../ui/BottomSheet';
 import { Button, Field, IconButton, TextInput } from '../../ui/controls';
 import { useUi } from '../../stores/uiStore';
 import { usePeriod, usePeriodOptions } from '../shared/hooks';
+import { useT, type DictKey } from '../../i18n';
 
-const KINDS: { value: Exclude<PeriodKind, 'custom'>; label: string }[] = [
-  { value: 'day', label: 'День' },
-  { value: 'week', label: 'Неделя' },
-  { value: 'month', label: 'Месяц' },
-  { value: 'year', label: 'Год' },
+const KINDS: { value: Exclude<PeriodKind, 'custom'>; label: DictKey }[] = [
+  { value: 'day', label: 'period.day' },
+  { value: 'week', label: 'period.week' },
+  { value: 'month', label: 'period.month' },
+  { value: 'year', label: 'period.year' },
 ];
 
 /**
@@ -22,6 +23,7 @@ export function PeriodSwitcher() {
   const setPeriod = useUi((s) => s.setPeriod);
   const period = usePeriod();
   const opts = usePeriodOptions();
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -50,24 +52,24 @@ export function PeriodSwitcher() {
 
   return (
     <div className="flex items-center justify-between">
-      <IconButton label="Предыдущий период" onClick={() => shift(-1)}>
+      <IconButton label={t('period.previous')} onClick={() => shift(-1)}>
         <ChevronLeft />
       </IconButton>
       <button
         type="button"
         className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg font-semibold"
         onClick={openPicker}
-        aria-label={`Период: ${label}. Выбрать период`}
+        aria-label={t('period.aria', { label })}
       >
         <CalendarDays size={18} className="text-accent" aria-hidden="true" />
         <span className="first-letter:uppercase">{label}</span>
       </button>
-      <IconButton label="Следующий период" onClick={() => shift(1)}>
+      <IconButton label={t('period.next')} onClick={() => shift(1)}>
         <ChevronRight />
       </IconButton>
-      <BottomSheet open={open} onClose={() => setOpen(false)} title="Период">
+      <BottomSheet open={open} onClose={() => setOpen(false)} title={t('period.title')}>
         <div className="flex flex-col gap-4">
-          <div role="radiogroup" aria-label="Длина периода" className="grid grid-cols-2 gap-2">
+          <div role="radiogroup" aria-label={t('period.length')} className="grid grid-cols-2 gap-2">
             {KINDS.map((k) => (
               <button
                 key={k.value}
@@ -80,7 +82,7 @@ export function PeriodSwitcher() {
                 }}
                 className={`min-h-12 rounded-xl font-medium ${selection.kind === k.value ? 'bg-accent text-accent-fg' : 'bg-surface-2'}`}
               >
-                {k.label}
+                {t(k.label)}
               </button>
             ))}
           </div>
@@ -94,12 +96,12 @@ export function PeriodSwitcher() {
               setOpen(false);
             }}
           >
-            Сегодня
+            {t('common.today')}
           </Button>
           <div className="flex flex-col gap-3 rounded-2xl border border-border p-3">
-            <span className="font-medium">Свои даты</span>
+            <span className="font-medium">{t('period.custom')}</span>
             <div className="grid grid-cols-2 gap-2">
-              <Field label="С">
+              <Field label={t('period.from')}>
                 {(id) => (
                   <TextInput
                     id={id}
@@ -109,7 +111,7 @@ export function PeriodSwitcher() {
                   />
                 )}
               </Field>
-              <Field label="По">
+              <Field label={t('period.to')}>
                 {(id) => (
                   <TextInput
                     id={id}
@@ -128,7 +130,7 @@ export function PeriodSwitcher() {
                 setOpen(false);
               }}
             >
-              Показать
+              {t('period.show')}
             </Button>
           </div>
         </div>
