@@ -125,9 +125,6 @@ export const ru = {
   'home.ringIncomeAria': 'Доходы {amount}. Показать расходы',
   'home.newExpenseCategory': 'Новая категория расходов',
   'home.newIncomeCategory': 'Новая категория доходов',
-  'home.ringHint':
-    'Нажмите на круг, чтобы переключить расходы и доходы. Долгое нажатие на категорию — изменить её.',
-
   // Ещё
   'more.budgets': 'Бюджеты',
   'more.budgetsHint': 'Лимиты на месяц',
@@ -327,6 +324,8 @@ export const ru = {
   'accounts.section': 'Раздел',
   'accounts.emptyText': 'Добавьте наличные, карту или накопительный счёт.',
   'accounts.total': 'Всего на счетах',
+  'accounts.transfer': 'Перевод между счетами',
+  'accounts.transferFrom': 'Перевести с «{name}»',
   'accounts.noConversion': 'Суммы в разных валютах не конвертируются.',
   'accounts.hidden': 'Скрытые счета ({count})',
   'accounts.noIncomeCategories': 'Нет категорий доходов.',
@@ -479,11 +478,7 @@ export const ru = {
   'stats.total': 'Всего',
   'stats.barsAria': 'Столбчатая диаграмма доходов и расходов',
   'stats.noTransactions': 'Нет операций.',
-  'stats.allTime': 'За всё время',
   'stats.since': 'с {date}',
-  'stats.net': 'Итого',
-  'stats.showAllTime': 'Показать всё время',
-
   // Настройки
   'settings.language': 'Язык',
   'settings.languageSystem': 'Как в системе ({name})',

@@ -111,9 +111,6 @@ export const en: Dict = {
   'home.ringIncomeAria': 'Income {amount}. Show expenses',
   'home.newExpenseCategory': 'New expense category',
   'home.newIncomeCategory': 'New income category',
-  'home.ringHint':
-    'Tap the circle to switch between expenses and income. Long-press a category to edit it.',
-
   // More
   'more.budgets': 'Budgets',
   'more.budgetsHint': 'Monthly limits',
@@ -317,6 +314,8 @@ export const en: Dict = {
   'accounts.section': 'Section',
   'accounts.emptyText': 'Add cash, a card or a savings account.',
   'accounts.total': 'Total in accounts',
+  'accounts.transfer': 'Transfer between accounts',
+  'accounts.transferFrom': 'Transfer from {name}',
   'accounts.noConversion': 'Amounts in different currencies are not converted.',
   'accounts.hidden': 'Hidden accounts ({count})',
   'accounts.noIncomeCategories': 'No income categories.',
@@ -482,11 +481,7 @@ export const en: Dict = {
   'stats.total': 'Total',
   'stats.barsAria': 'Bar chart of income and expenses',
   'stats.noTransactions': 'No transactions.',
-  'stats.allTime': 'All time',
   'stats.since': 'since {date}',
-  'stats.net': 'Net',
-  'stats.showAllTime': 'Show all time',
-
   // Settings
   'settings.language': 'Language',
   'settings.languageSystem': 'System default ({name})',

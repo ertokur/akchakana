@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { ArrowLeftRight } from 'lucide-react';
 import { periodLabel } from '../../domain/dates';
 import { totalsByCategory } from '../../domain/stats';
 import { byOrder, useData } from '../../stores/dataStore';
@@ -37,18 +36,11 @@ export function IncomeStrip() {
 
   return (
     <section aria-label={t('common.incomes')} className="mb-4 rounded-2xl bg-surface p-3">
-      <div className="mb-1 flex items-center justify-between gap-2">
+      <div className="mb-1 flex min-h-11 items-center justify-between gap-2">
         <h2 className="text-sm font-semibold">
           {t('common.incomes')}{' '}
           <span className="font-normal text-muted">· {periodLabel(period, opts.timeZone)}</span>
         </h2>
-        <button
-          type="button"
-          onClick={() => openNew('transfer')}
-          className="flex min-h-11 items-center gap-1.5 rounded-xl bg-accent-soft px-3 text-sm font-semibold text-accent-strong"
-        >
-          <ArrowLeftRight size={16} aria-hidden="true" /> {t('common.transfer')}
-        </button>
       </div>
       {income.length === 0 ? (
         <p className="text-sm text-muted">{t('accounts.noIncomeCategories')}</p>

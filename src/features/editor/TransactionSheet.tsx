@@ -75,8 +75,14 @@ function EditorForm({
     original?.type ?? (editor.mode === 'new' ? editor.type : 'expense'),
   );
   const [accountId, setAccountId] = useState<string | undefined>(defaultAccount);
+  // Для нового перевода: если других счетов ровно один — он и есть получатель,
+  // если несколько — сразу открывается выбор счёта зачисления.
+  const otherAccounts = accounts.filter((a) => !a.archived && a.id !== defaultAccount);
+  const newTransfer = editor.mode === 'new' && editor.type === 'transfer';
   const [toAccountId, setToAccountId] = useState<string | undefined>(
-    original?.toAccountId ?? preset?.toAccountId,
+    original?.toAccountId ??
+      preset?.toAccountId ??
+      (newTransfer && otherAccounts.length === 1 ? otherAccounts[0].id : undefined),
   );
   const [categoryId, setCategoryId] = useState<string | undefined>(
     original?.categoryId ?? preset?.categoryId,
@@ -101,9 +107,13 @@ function EditorForm({
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   // Новая операция без категории сразу открывает выбор категории.
-  const [picker, setPicker] = useState<'account' | 'target' | 'category' | null>(() =>
-    editor.mode === 'new' && !preset?.categoryId && editor.type !== 'transfer' ? 'category' : null,
-  );
+  const [picker, setPicker] = useState<'account' | 'target' | 'category' | null>(() => {
+    if (editor.mode !== 'new') return null;
+    if (editor.type === 'transfer') {
+      return !preset?.toAccountId && otherAccounts.length > 1 ? 'target' : null;
+    }
+    return preset?.categoryId ? null : 'category';
+  });
   const balances = useBalances();
   const category = categories.find((c) => c.id === categoryId);
   const parentCategory = category?.parentId

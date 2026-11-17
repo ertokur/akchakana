@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { ChartConfiguration } from 'chart.js';
 import { ChevronLeft, TrendingDown, TrendingUp } from 'lucide-react';
-import { summarize, summarizeByCurrency } from '../../domain/balances';
+import { summarize } from '../../domain/balances';
 import {
   formatDate,
   formatInTz,
@@ -19,7 +19,7 @@ import {
   type BucketPoint,
   type CategorySlice,
 } from '../../domain/stats';
-import type { CategoryKind, Id, Transaction } from '../../domain/types';
+import type { CategoryKind, Id } from '../../domain/types';
 import { useData } from '../../stores/dataStore';
 import { useUi } from '../../stores/uiStore';
 import { Card, EmptyState, SegmentedControl } from '../../ui/controls';
@@ -114,14 +114,6 @@ export function StatsScreen() {
             note={allTime ? (since ?? '') : undefined}
           />
         </div>
-        {!allTime && (
-          <AllTimeCard
-            transactions={transactions}
-            accountFilter={accountFilter}
-            currency={currency}
-            timeZone={settings.timeZone}
-          />
-        )}
 
         <Card>
           <SegmentedControl
@@ -265,71 +257,6 @@ function CompareCard({
               })}
         </div>
       )}
-    </Card>
-  );
-}
-
-/**
- * Итоги за всё время с учётом фильтра по счёту. Валюты не смешиваются:
- * по строке на каждую валюту, основная — первой.
- */
-function AllTimeCard({
-  transactions,
-  accountFilter,
-  currency,
-  timeZone,
-}: {
-  transactions: Transaction[];
-  accountFilter: Id | 'all';
-  currency: string;
-  timeZone: string;
-}) {
-  const t = useT();
-  const setPeriod = useUi((s) => s.setPeriod);
-  const visible = useMemo(
-    () => filterTransactions(transactions, -Infinity, Infinity, accountFilter),
-    [transactions, accountFilter],
-  );
-  const groups = useMemo(() => summarizeByCurrency(visible, currency), [visible, currency]);
-  if (groups.length === 0) return null;
-  const first = Math.min(...visible.map((x) => x.date));
-  return (
-    <Card className="flex flex-col gap-2 p-3">
-      <h2 className="flex flex-wrap items-baseline gap-x-2 font-semibold">
-        {t('stats.allTime')}
-        <span className="text-sm font-normal text-muted">
-          {t('stats.since', { date: formatDate(first, timeZone, 'dayShortYear') })}
-        </span>
-      </h2>
-      {groups.map(({ currency: cur, summary }) => (
-        <dl
-          key={cur}
-          aria-label={cur}
-          className="tabular grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-sm"
-        >
-          <dt className="text-muted">{t('common.expenses')}</dt>
-          <dd className="text-right font-semibold break-words text-expense">
-            {formatMoney(summary.expense, cur)}
-          </dd>
-          <dt className="text-muted">{t('common.incomes')}</dt>
-          <dd className="text-right font-semibold break-words text-income">
-            {formatMoney(summary.income, cur)}
-          </dd>
-          <dt className="text-muted">{t('stats.net')}</dt>
-          <dd
-            className={`text-right font-semibold break-words ${summary.balance < 0 ? 'text-expense' : ''}`}
-          >
-            {formatMoney(summary.balance, cur, { sign: true })}
-          </dd>
-        </dl>
-      ))}
-      <button
-        type="button"
-        onClick={() => setPeriod({ kind: 'all', anchor: Date.now() })}
-        className="flex min-h-11 items-center self-start text-sm font-medium text-accent"
-      >
-        {t('stats.showAllTime')}
-      </button>
     </Card>
   );
 }

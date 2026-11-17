@@ -17,8 +17,18 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: '0.3.1',
     date: '2026-11-17',
     changes: {
-      ru: ['Обновлены инструменты сборки и публикации приложения.'],
-      en: ['Updated the tools used to build and publish the app.'],
+      ru: [
+        'Перевод между счетами: кнопка на экране «Счета» и у каждого счёта; счёт зачисления подставляется сам или сразу предлагается его выбор.',
+        'Убрана подсказка под кругом на вкладке «Категории».',
+        'Убрана карточка итогов за всё время в «Обзоре»; период «Всё время» остался в переключателе периода.',
+        'Обновлены инструменты сборки и публикации приложения.',
+      ],
+      en: [
+        'Transfers between accounts: a button on the Accounts screen and on each account; the destination account is filled in automatically or offered right away.',
+        'Removed the hint below the ring on the Categories tab.',
+        'Removed the all-time totals card from Overview; "All time" is still available in the period switcher.',
+        'Updated the tools used to build and publish the app.',
+      ],
     },
   },
   {

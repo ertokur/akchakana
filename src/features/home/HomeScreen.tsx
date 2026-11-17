@@ -172,7 +172,6 @@ export function HomeScreen() {
               </span>
             </button>
           </div>
-          {!editing && <p className="mt-4 text-center text-xs text-muted">{t('home.ringHint')}</p>}
         </>
       )}
       {form && (
