@@ -78,10 +78,14 @@ describe('экран операций', () => {
     // Выбор категории открывается сразу; у «Продуктов» есть подкатегории.
     const picker = await screen.findByRole('dialog', { name: 'Категория расхода' });
     await user.click(within(picker).getByRole('radio', { name: 'Продукты' }));
-    await user.click(within(picker).getByRole('radio', { name: 'Без подкатегории' }));
     await waitFor(() =>
       expect(screen.queryByRole('dialog', { name: 'Категория расхода' })).not.toBeInTheDocument(),
     );
+    // Подкатегории — строкой значков в самой шторке, как в 1Money; по умолчанию выбрана категория.
+    const subs = within(sheet).getByRole('radiogroup', { name: 'Подкатегория' });
+    expect(within(subs).getByRole('radio', { name: 'Продукты, без подкатегории' })).toBeChecked();
+    await user.click(within(subs).getByRole('radio', { name: 'Рынок' }));
+    expect(within(subs).getByRole('radio', { name: 'Рынок' })).toBeChecked();
     const keypad = screen.getByRole('group', { name: 'Калькулятор' });
     for (const k of ['1', '2', '0', 'Плюс', '3', '0']) {
       await user.click(within(keypad).getByRole('button', { name: k }));
@@ -90,11 +94,15 @@ describe('экран операций', () => {
     await user.click(within(keypad).getByRole('button', { name: 'Сохранить' }));
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    const row = await screen.findByRole('button', { name: /Продукты, −150\u00a0сом, Рынок/ });
+    const row = await screen.findByRole('button', {
+      name: /Продукты \/ Рынок, −150\u00a0сом, Рынок/,
+    });
     expect(row).toBeInTheDocument();
 
     const saved = await repos.transactions.getAll();
     expect(saved).toHaveLength(1);
+    const market = (await repos.categories.getAll()).find((c) => c.name === 'Рынок');
+    expect(saved[0].categoryId).toBe(market?.id);
     expect(saved[0]).toMatchObject({
       type: 'expense',
       amount: 15000,

@@ -18,6 +18,7 @@ import { IconButton, SegmentedControl, TextInput } from '../../ui/controls';
 import { checkBudgetsAfterSave } from '../budgets/warnings';
 import { AccountPickerSheet } from './AccountPicker';
 import { FlowEndpoint } from './FlowEndpoint';
+import { SubcategoryBubbles } from './SubcategoryBubbles';
 import { useBalances } from '../shared/hooks';
 import { applyKey, CalcKeypad } from './CalcKeypad';
 import { CategoryGrid } from './CategoryGrid';
@@ -105,6 +106,17 @@ function EditorForm({
   const parentCategory = category?.parentId
     ? categories.find((c) => c.id === category.parentId)
     : undefined;
+  // Подкатегории выбранной категории — строкой значков под блоками «откуда → куда».
+  const rootCategory = parentCategory ?? category;
+  const subcategories = useMemo(
+    () =>
+      rootCategory
+        ? categories
+            .filter((c) => c.parentId === rootCategory.id && (!c.archived || c.id === categoryId))
+            .sort(byOrder)
+        : [],
+    [categories, rootCategory, categoryId],
+  );
 
   const amountResult = useMemo(() => {
     try {
@@ -313,6 +325,18 @@ function EditorForm({
           )}
         </div>
 
+        {rootCategory && subcategories.length > 0 && (
+          <SubcategoryBubbles
+            parent={rootCategory}
+            subcategories={subcategories}
+            value={categoryId}
+            onChange={(id) => {
+              setCategoryId(id);
+              setError(null);
+            }}
+          />
+        )}
+
         {crossCurrency && target && (
           <label className="flex items-center gap-2">
             <span className="text-sm text-muted">Зачислено, {target.currency}</span>
@@ -371,11 +395,10 @@ function EditorForm({
             categories={categories}
             kind={type}
             value={categoryId}
-            onChange={(id, final) => {
+            onChange={(id) => {
               setCategoryId(id);
               setError(null);
-              // У категории с подкатегориями выбор остаётся открытым, пока не выбрана подкатегория.
-              if (final) setPicker(null);
+              setPicker(null);
             }}
           />
         )}
