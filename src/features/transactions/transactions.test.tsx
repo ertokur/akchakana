@@ -123,6 +123,8 @@ describe('экран операций', () => {
     await setupTestRepos();
     render(<App />);
     expect(await screen.findByRole('heading', { name: 'Первый счёт' })).toBeInTheDocument();
-    expect(screen.getByText('Made by Erbol Tokur and Claude with <3')).toBeInTheDocument();
+    expect(
+      screen.getByRole('note', { name: /Made by Erbol Tokur and Claude/ }),
+    ).toBeInTheDocument();
   });
 });

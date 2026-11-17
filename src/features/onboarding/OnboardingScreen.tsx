@@ -6,6 +6,7 @@ import type { AccountKind } from '../../domain/types';
 import { useData } from '../../stores/dataStore';
 import { Button, Field, Select, TextInput } from '../../ui/controls';
 import { navigate } from '../../app/router';
+import { MadeWith } from '../../ui/MadeWith';
 
 /** Первый запуск: валюта и первый счёт, либо импорт резервной копии 1Money. */
 export function OnboardingScreen() {
@@ -52,6 +53,7 @@ export function OnboardingScreen() {
         <p className="max-w-xs text-muted">
           Личный учёт денег. Все данные хранятся только на этом устройстве и работают без интернета.
         </p>
+        <MadeWith className="pt-1" />
       </div>
 
       <section
@@ -117,8 +119,6 @@ export function OnboardingScreen() {
           Импортировать резервную копию
         </Button>
       </section>
-
-      <p className="text-center text-sm text-muted">Made by Erbol Tokur and Claude with &lt;3</p>
     </div>
   );
 }
